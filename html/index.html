@@ -27,26 +27,42 @@
 		var canvas = document.getElementById("myCanvas");
 		var ctx = canvas.getContext("2d");
 
+            var data = {
+                points: [],
+                addPoint: function (x, y) {
+                    this.points.push({ x: x, y: y });
+                    this.redraw();
+                },
+                redraw: function () {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = 'red';
+                    for (var i = 0; i < this.points.length; i++) {
+                        var point = this.points[i];
+                        ctx.beginPath();
+                        ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+                        ctx.fill();
+                    }
+                }
+            };
+
 		resizeCanvas();
 
 		function resizeCanvas() {
 			canvas.width = window.innerWidth;
 			canvas.height = window.innerHeight;
-			ctx.fillRect(0, 0, canvas.width, canvas.height);
+            data.redraw();
 		}
 
-		window.addEventListener('resize', resizeCanvas);
+            window.addEventListener('resize', function () {
+                resizeCanvas();
+                data.redraw();
+            });
 
-		function drawPoint(event) {
+            canvas.addEventListener('mousemove', function (event) {
 			var x = event.clientX;
 			var y = event.clientY;
-			ctx.fillStyle = 'red';
-			ctx.beginPath();
-			ctx.arc(x, y, 5, 0, 2 * Math.PI);
-			ctx.fill();
-		}
-
-		canvas.addEventListener('mousemove', drawPoint);
+            data.addPoint(x, y);
+        });
 	</script>
 </body>
 </html>
