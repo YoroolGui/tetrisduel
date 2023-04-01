@@ -29,34 +29,38 @@
 
             var data = {
                 points: [],
-                addPoint: function (x, y) {
-                    this.points.push({ x: x, y: y });
-                    this.redraw();
-                },
-                redraw: function () {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.fillStyle = 'red';
-                    for (var i = 0; i < this.points.length; i++) {
-                        var point = this.points[i];
-                        ctx.beginPath();
-                        ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
-                        ctx.fill();
-                    }
+            addPoint: function (x, y) {
+                this.points.push({ x: x, y: y });
+                this.redraw();
+            },
+            redraw: function () {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'red';
+                for (var i = 0; i < this.points.length; i++) {
+                    var point = this.points[i];
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+                    ctx.fill();
                 }
-            };
+            },
+            setCanvasSize: function (width, height) {
+                canvas.width = width;
+                canvas.height = height;
+                this.redraw();
+            }
+        };
 
 		resizeCanvas();
 
 		function resizeCanvas() {
-			canvas.width = window.innerWidth;
-			canvas.height = window.innerHeight;
-            data.redraw();
+            var width = window.innerWidth;
+            var height = window.innerHeight;
+            data.setCanvasSize(width, height);
 		}
 
             window.addEventListener('resize', function () {
                 resizeCanvas();
-                data.redraw();
-            });
+        });
 
             canvas.addEventListener('mousemove', function (event) {
 			var x = event.clientX;
