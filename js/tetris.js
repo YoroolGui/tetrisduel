@@ -158,6 +158,21 @@ class TetrisGame {
         return true;
     }
 
+    doRotate(isRight) {
+        const { currentFigure, currentFigureX, currentFigureY } = this;
+        const newFigure = isRight ? this.rotateFigureRight(currentFigure) : this.rotateFigureLeft(currentFigure);
+
+        if (this.isFigureOutOfBounds(newFigure, currentFigureX, currentFigureY) || this.doesFigureOverlap(newFigure, currentFigureX, currentFigureY)) {
+            return false;
+        }
+
+        this.clearFigure(currentFigure, currentFigureX, currentFigureY);
+        this.drawFigure(newFigure, currentFigureX, currentFigureY);
+        this.currentFigure = newFigure;
+
+        return true;
+    }
+
     doMoveLeft() {
         return this.doMoveSide(false);
     }
@@ -166,15 +181,13 @@ class TetrisGame {
         return this.doMoveSide(true);
     }
 
-
     doRotateLeft() {
-        // TODO: Implement method to rotate the current figure 90 degrees counterclockwise
+        return this.doRotate(false);
     }
 
     doRotateRight() {
-        // TODO: Implement method to rotate the current figure 90 degrees clockwise
+        return this.doRotate(true);
     }
-
     doMoveDown() {
         // TODO: Implement method to move the current figure one cell down
     }
