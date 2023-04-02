@@ -60,6 +60,36 @@ class TetrisGame {
         }
     }
 
+    doesFigureOverlap(figure, x, y) {
+        for (let i = 0; i < figure.length; i++) {
+            for (let j = 0; j < figure[0].length; j++) {
+                const row = y + i;
+                const col = x + j;
+
+                if (figure[i][j] && this.field[row][col]) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    isFigureOutOfBounds(figure, x, y) {
+        for (let i = 0; i < figure.length; i++) {
+            for (let j = 0; j < figure[0].length; j++) {
+                const row = y + i;
+                const col = x + j;
+
+                if (figure[i][j] && (row < 0 || row >= this.rows || col < 0 || col >= this.columns)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     step() {
         const command = this.commandQueue.shift();
 
