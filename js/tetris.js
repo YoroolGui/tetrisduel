@@ -222,5 +222,62 @@ class TetrisGame {
             }
         }
     }
+
+    fall() {
+        let count = 0;
+
+        for (let i = this.rows - 1; i >= 0; i--) {
+            for (let j = 0; j < this.columns; j++) {
+                if (this.field[i][j] !== 0) {
+                    const group = [];
+                    let groupBottom = i;
+
+                    // Find the connected group of cells
+                    const findGroup = (row, col) => {
+                        if (row < 0 || row >= this.rows || col < 0 || col >= this.columns) {
+                            return;
+                        }
+
+                        if (this.field[row][col] !== 0 && !group.includes(`${row},${col}`)) {
+                            group.push(`${row},${col}`);
+                            if (row > groupBottom) {
+                                groupBottom = row;
+                            }
+                            findGroup(row - 1, col);
+                            findGroup(row + 1, col);
+                            findGroup(row, col - 1);
+                            findGroup(row, col + 1);
+                        }
+                    };
+
+                    findGroup(i, j);
+
+                    // Check if the group can move down
+                    let canMoveDown = true;
+                    for (const cell of group) {
+                        const [row, col] = cell.split(",").map(Number);
+                        if (row === this.rows - 1 || this.field[row + 1][col] !== 0 && !group.includes(`${row + 1},${col}`)) {
+                            canMoveDown = false;
+                            break;
+                        }
+                    }
+
+                    // Move the group down
+                    if (canMoveDown) {
+                        const distance = this.rows - 1 - groupBottom;
+                        for (const cell of group) {
+                            const [row, col] = cell.split(",").map(Number);
+                            this.field[row + distance][col] = this.field[row][col];
+                            this.field[row][col] = 0;
+                        }
+                        count += distance;
+                    }
+                }
+            }
+        }
+
+        return count;
+    }
+
 }
 
