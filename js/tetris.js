@@ -29,10 +29,6 @@ class TetrisGame {
         this.commandQueue.push("down");
     }
 
-    drop() {
-        this.commandQueue.push("drop");
-    }
-
     newFigure() {
         const figures = [
             [[1, 1], [1, 1]],
@@ -134,9 +130,6 @@ class TetrisGame {
                 break;
             case "down":
                 this.doMoveDown();
-                break;
-            case "drop":
-                this.doDrop();
                 break;
             default:
                 break;
