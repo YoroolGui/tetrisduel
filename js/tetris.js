@@ -144,21 +144,20 @@ class TetrisGame {
     }
 
     doMoveLeft() {
-        const nextX = this.currentFigureX - 1;
+        const { currentFigure, currentFigureX, currentFigureY } = this;
 
-        if (this.isFigureOutOfBounds(this.currentFigure, nextX, this.currentFigureY)) {
-            return;
+        const newFigureX = currentFigureX - 1;
+
+        if (this.isFigureOutOfBounds(currentFigure, newFigureX, currentFigureY) || this.doesFigureOverlap(currentFigure, newFigureX, currentFigureY)) {
+            return false;
         }
 
-        if (this.doesFigureOverlap(this.currentFigure, nextX, this.currentFigureY)) {
-            return;
-        }
+        this.clearFigure(currentFigure, currentFigureX, currentFigureY);
+        this.drawFigure(currentFigure, newFigureX, currentFigureY);
+        this.currentFigureX = newFigureX;
 
-        this.clearFigureFromField(this.currentFigure, this.currentFigureX, this.currentFigureY);
-        this.currentFigureX = nextX;
-        this.drawFigureToField(this.currentFigure, this.currentFigureX, this.currentFigureY);
+        return true;
     }
-
     doMoveRight() {
         // TODO: Implement method to move the current figure one cell to the right
     }
