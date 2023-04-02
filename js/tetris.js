@@ -7,6 +7,7 @@ class TetrisGame {
         this.currentFigure = null;
         this.currentFigureX = 0;
         this.currentFigureY = 0;
+        this.newFigure();
     }
 
     moveLeft() {
