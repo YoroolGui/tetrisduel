@@ -195,8 +195,32 @@ class TetrisGame {
     doRotateRight() {
         return this.doRotate(true);
     }
+
     doMoveDown() {
         return this.doMoveDown();
+    }
+
+    blastFilledRows() {
+        let count = 0;
+
+        for (let i = this.rows - 1; i >= 0; i--) {
+            if (this.field[i].every(cell => cell !== 0)) {
+                this.field[i].fill(-1);
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    clearBlast() {
+        for (let i = 0; i < this.field.length; i++) {
+            for (let j = 0; j < this.field[i].length; j++) {
+                if (this.field[i][j] === -1) {
+                    this.field[i][j] = 0;
+                }
+            }
+        }
     }
 }
 
