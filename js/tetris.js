@@ -1,4 +1,9 @@
 class TetrisGame {
+    // Constants
+    static FIGURE_TYPES = ["I", "O", "T", "S", "Z", "J", "L"];
+    static EMPTY_CELL = 0;
+    static BLASTED_CELL = -1;
+
     constructor(rows, columns) {
         this.rows = rows;
         this.columns = columns;
@@ -8,6 +13,26 @@ class TetrisGame {
         this.currentFigureX = 0;
         this.currentFigureY = 0;
         this.newFigure();
+    }
+
+    // Getters
+    getRows() {
+        return this.rows;
+    }
+
+    getColumns() {
+        return this.columns;
+    }
+
+    getCellState(row, column) {
+        const cellValue = this.field[row][column];
+        if (cellValue === TetrisGame.EMPTY_CELL) {
+            return "Empty";
+        } else if (cellValue === TetrisGame.BLASTED_CELL) {
+            return "Blast";
+        } else {
+            return `Figure${this.currentFigure.type}`;
+        }
     }
 
     moveLeft() {
@@ -202,82 +227,79 @@ class TetrisGame {
 
     blastFilledRows() {
         let count = 0;
-
-        for (let i = this.rows - 1; i >= 0; i--) {
+        for (let i = 0; i < this.rows; i++) {
             if (this.field[i].every(cell => cell !== 0)) {
-                this.field[i].fill(-1);
+                this.field[i].fill(TetrisGame.BLASTED_CELL);
                 count++;
             }
         }
-
         return count;
     }
 
     clearBlast() {
-        for (let i = 0; i < this.field.length; i++) {
-            for (let j = 0; j < this.field[i].length; j++) {
-                if (this.field[i][j] === -1) {
-                    this.field[i][j] = 0;
+        for (let i = 0; i < this.rows; i++) {
+            for (let j = 0; j < this.columns; j++) {
+                if (this.field[i][j] === TetrisGame.BLASTED_CELL) {
+                    this.field[i][j] = TetrisGame.EMPTY_CELL;
                 }
             }
         }
     }
 
     fall() {
-        let count = 0;
+        let distance = 0;
+        const groups = [];
 
-        for (let i = this.rows - 1; i >= 0; i--) {
+        // Create groups of connected cells
+        for (let i = 0; i < this.rows; i++) {
             for (let j = 0; j < this.columns; j++) {
-                if (this.field[i][j] !== 0) {
-                    const group = [];
-                    let groupBottom = i;
+                if (this.field[i][j] !== TetrisGame.EMPTY_CELL) {
+                    const neighbors = [];
+                    let belongsToGroup = false;
 
-                    // Find the connected group of cells
-                    const findGroup = (row, col) => {
-                        if (row < 0 || row >= this.rows || col < 0 || col >= this.columns) {
-                            return;
-                        }
-
-                        if (this.field[row][col] !== 0 && !group.includes(`${row},${col}`)) {
-                            group.push(`${row},${col}`);
-                            if (row > groupBottom) {
-                                groupBottom = row;
-                            }
-                            findGroup(row - 1, col);
-                            findGroup(row + 1, col);
-                            findGroup(row, col - 1);
-                            findGroup(row, col + 1);
-                        }
-                    };
-
-                    findGroup(i, j);
-
-                    // Check if the group can move down
-                    let canMoveDown = true;
-                    for (const cell of group) {
-                        const [row, col] = cell.split(",").map(Number);
-                        if (row === this.rows - 1 || this.field[row + 1][col] !== 0 && !group.includes(`${row + 1},${col}`)) {
-                            canMoveDown = false;
+                    // Check if the cell is touching any existing group
+                    for (let group of groups) {
+                        if (group.some(([x, y]) => Math.abs(x - i) + Math.abs(y - j) === 1)) {
+                            group.push([i, j]);
+                            belongsToGroup = true;
                             break;
                         }
                     }
 
-                    // Move the group down
-                    if (canMoveDown) {
-                        const distance = this.rows - 1 - groupBottom;
-                        for (const cell of group) {
-                            const [row, col] = cell.split(",").map(Number);
-                            this.field[row + distance][col] = this.field[row][col];
-                            this.field[row][col] = 0;
-                        }
-                        count += distance;
+                    // If the cell is not touching any existing group, create a new group
+                    if (!belongsToGroup) {
+                        groups.push([[i, j]]);
                     }
                 }
             }
         }
 
-        return count;
+        // Move each group down as a whole until it reaches the bottom of the field or overlaps with non-empty cells
+        for (let group of groups) {
+            let canMove = true;
+            while (canMove) {
+                for (let [i, j] of group) {
+                    if (i + distance + 1 >= this.rows || this.field[i + distance + 1][j] !== TetrisGame.EMPTY_CELL) {
+                        canMove = false;
+                        break;
+                    }
+                }
+                if (canMove) {
+                    distance++;
+                }
+            }
+
+            // Update the field with the new positions of the cells in the group
+            for (let [i, j] of group) {
+                this.field[i + distance][j] = this.field[i][j];
+                this.field[i][j] = TetrisGame.EMPTY_CELL;
+            }
+
+            // Update the total distance that the cells were moved down
+            distance = Math.max(distance, 0);
+            distance += group.some(([i, j]) => i + distance === this.rows - 1) ? 0 : 1;
+        }
+
+        return distance;
     }
-
 }
-
