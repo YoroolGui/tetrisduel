@@ -4,6 +4,9 @@ class TetrisGame {
         this.columns = columns;
         this.field = new Array(rows).fill().map(() => new Array(columns).fill(0));
         this.commandQueue = [];
+        this.currentFigure = null;
+        this.currentFigureX = 0;
+        this.currentFigureY = 0;
     }
 
     moveLeft() {
@@ -46,6 +49,10 @@ class TetrisGame {
         const figureWidth = figure[0].length;
         const startX = Math.floor((this.columns - figureWidth) / 2);
 
+        this.currentFigure = figure;
+        this.currentFigureX = startX;
+        this.currentFigureY = 0;
+
         for (let i = 0; i < figure.length; i++) {
             for (let j = 0; j < figureWidth; j++) {
                 this.field[i][startX + j] = figure[i][j];
@@ -81,7 +88,19 @@ class TetrisGame {
     }
 
     doMoveLeft() {
-        // TODO: Implement method to move the current figure one cell to the left
+        const nextX = this.currentFigureX - 1;
+
+        if (this.isFigureOutOfBounds(this.currentFigure, nextX, this.currentFigureY)) {
+            return;
+        }
+
+        if (this.doesFigureOverlap(this.currentFigure, nextX, this.currentFigureY)) {
+            return;
+        }
+
+        this.clearFigureFromField(this.currentFigure, this.currentFigureX, this.currentFigureY);
+        this.currentFigureX = nextX;
+        this.drawFigureToField(this.currentFigure, this.currentFigureX, this.currentFigureY);
     }
 
     doMoveRight() {
