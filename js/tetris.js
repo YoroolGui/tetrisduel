@@ -143,10 +143,9 @@ class TetrisGame {
         }
     }
 
-    doMoveLeft() {
+    doMoveSide(isRight) {
         const { currentFigure, currentFigureX, currentFigureY } = this;
-
-        const newFigureX = currentFigureX - 1;
+        const newFigureX = isRight ? currentFigureX + 1 : currentFigureX - 1;
 
         if (this.isFigureOutOfBounds(currentFigure, newFigureX, currentFigureY) || this.doesFigureOverlap(currentFigure, newFigureX, currentFigureY)) {
             return false;
@@ -158,9 +157,15 @@ class TetrisGame {
 
         return true;
     }
-    doMoveRight() {
-        // TODO: Implement method to move the current figure one cell to the right
+
+    doMoveLeft() {
+        return this.doMoveSide(false);
     }
+
+    doMoveRight() {
+        return this.doMoveSide(true);
+    }
+
 
     doRotateLeft() {
         // TODO: Implement method to rotate the current figure 90 degrees counterclockwise
