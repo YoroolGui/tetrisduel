@@ -30,6 +30,10 @@ class TetrisGame {
     }
 
     newFigure() {
+        if (this.currentFigure !== null) {
+            this.lockFigure(this.currentFigure, this.currentFigureX, this.currentFigureY);
+        }
+
         const figures = [
             [[1, 1], [1, 1]],
             [[0, 2, 0], [2, 2, 2]],
@@ -69,14 +73,11 @@ class TetrisGame {
         }
     }
 
-    drawFigureToField(figure, x, y) {
+    drawFigure(figure, x, y) {
         for (let i = 0; i < figure.length; i++) {
-            for (let j = 0; j < figure[0].length; j++) {
-                const row = y + i;
-                const col = x + j;
-
-                if (figure[i][j]) {
-                    this.field[row][col] = figure[i][j];
+            for (let j = 0; j < figure[i].length; j++) {
+                if (figure[i][j] !== 0) {
+                    this.field[y + i][x + j] = figure[i][j];
                 }
             }
         }
