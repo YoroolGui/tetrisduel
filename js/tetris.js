@@ -173,6 +173,21 @@ class TetrisGame {
         return true;
     }
 
+    doMoveDown() {
+        const { currentFigure, currentFigureX, currentFigureY } = this;
+        const newFigureY = currentFigureY + 1;
+
+        if (this.isFigureOutOfBounds(currentFigure, currentFigureX, newFigureY) || this.doesFigureOverlap(currentFigure, currentFigureX, newFigureY)) {
+            return false;
+        }
+
+        this.clearFigure(currentFigure, currentFigureX, currentFigureY);
+        this.drawFigure(currentFigure, currentFigureX, newFigureY);
+        this.currentFigureY = newFigureY;
+
+        return true;
+    }
+
     doMoveLeft() {
         return this.doMoveSide(false);
     }
@@ -189,7 +204,7 @@ class TetrisGame {
         return this.doRotate(true);
     }
     doMoveDown() {
-        // TODO: Implement method to move the current figure one cell down
+        return this.doMoveDown();
     }
 
     doDrop() {
