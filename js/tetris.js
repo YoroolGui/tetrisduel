@@ -199,8 +199,5 @@ class TetrisGame {
     doMoveDown() {
         return this.doMoveDown();
     }
-
-    doDrop() {
-        // TODO: Implement method to drop the current figure to the bottom of the field
-    }
 }
+
