@@ -60,6 +60,32 @@ class TetrisGame {
         }
     }
 
+    clearFigureFromField(figure, x, y) {
+        for (let i = 0; i < figure.length; i++) {
+            for (let j = 0; j < figure[0].length; j++) {
+                const row = y + i;
+                const col = x + j;
+
+                if (figure[i][j]) {
+                    this.field[row][col] = 0;
+                }
+            }
+        }
+    }
+
+    drawFigureToField(figure, x, y) {
+        for (let i = 0; i < figure.length; i++) {
+            for (let j = 0; j < figure[0].length; j++) {
+                const row = y + i;
+                const col = x + j;
+
+                if (figure[i][j]) {
+                    this.field[row][col] = figure[i][j];
+                }
+            }
+        }
+    }
+
     doesFigureOverlap(figure, x, y) {
         for (let i = 0; i < figure.length; i++) {
             for (let j = 0; j < figure[0].length; j++) {
