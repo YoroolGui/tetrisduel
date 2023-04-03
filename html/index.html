@@ -1,72 +1,87 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-	<title>Resizable Canvas</title>
-	<style>
-		html, body {
-			margin: 0;
-			padding: 0;
-			overflow: hidden;
-			width: 100%;
-			height: 100%;
-		}
-		canvas {
-			display: block;
-			width: 100vw;
-			height: 100vh;
-			margin: 0;
-			padding: 0;
-			border: none;
-		}
-	</style>
+    <title>Tetris Game</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            border: none;
+        }
+    </style>
+    <script src="js/tetris_game.js"></script>
+    <script src="js/tetris_draw.js"></script>
 </head>
+
 <body>
-	<canvas id="myCanvas"></canvas>
+    <canvas id="myCanvas"></canvas>
 
-	<script>
-		var canvas = document.getElementById("myCanvas");
-		var ctx = canvas.getContext("2d");
+    <script>
+        var canvas = document.getElementById("myCanvas");
+        var ctx = canvas.getContext("2d");
+        var tetrisGame = new TetrisGame(20, 10),
 
-            var data = {
-                points: [],
-            addPoint: function (x, y) {
-                this.points.push({ x: x, y: y });
-                this.redraw();
-            },
-            redraw: function () {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = 'red';
-                for (var i = 0; i < this.points.length; i++) {
-                    var point = this.points[i];
-                    ctx.beginPath();
-                    ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
-                    ctx.fill();
-                }
-            },
-            setCanvasSize: function (width, height) {
-                canvas.width = width;
-                canvas.height = height;
-                this.redraw();
+        function redraw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function setCanvasSize(width, height) {
+            canvas.width = width;
+            canvas.height = height;
+            redraw();
+        }
+
+        function resizeCanvas() {
+            setCanvasSize(window.innerWidth, window.innerHeight);
+        }
+        resizeCanvas();
+
+        window.addEventListener('resize', function () {
+            resizeCanvas();
+        });
+
+        setInterval(function () {
+            data.tetrisGame.step();
+            data.redraw();
+        }, 1);
+
+        document.addEventListener('keydown', function (event) {
+            switch (event.keyCode) {
+                case 37: // Left arrow or "a"
+                case 65:
+                    tetrisGame.moveLeft();
+                    break;
+                case 38: // Up arrow or "w"
+                case 87:
+                    tetrisGame.rotateRight();
+                    break;
+                case 39: // Right arrow or "d"
+                case 68:
+                    tetrisGame.moveRight();
+                    break;
+                case 40: // Down arrow or "s"
+                case 83:
+                    tetrisGame.moveDown();
+                    break;
+                case 32: // Space bar
+                    tetrisGame.drop();
+                    break;
             }
-        };
 
-		resizeCanvas();
-
-		function resizeCanvas() {
-            var width = window.innerWidth;
-            var height = window.innerHeight;
-            data.setCanvasSize(width, height);
-		}
-
-            window.addEventListener('resize', function () {
-                resizeCanvas();
-        });
-
-            canvas.addEventListener('mousemove', function (event) {
-			var x = event.clientX;
-			var y = event.clientY;
-            data.addPoint(x, y);
-        });
-	</script>
+    </script>
 </body>
+
 </html>
