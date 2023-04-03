@@ -217,9 +217,27 @@ class TetrisGame {
         return true;
     }
 
+    _rotateFigure(arr, isRight) {
+        const numRows = arr.length;
+        const numCols = arr[0].length;
+        const result = new Array(numCols);
+
+        for (let col = 0; col < numCols; col++) {
+            result[col] = new Array(numRows);
+            for (let row = 0; row < numRows; row++) {
+                if (isRight) {
+                    result[col][row] = arr[numRows - row - 1][col];
+                } else {
+                    result[col][row] = arr[row][numCols - col - 1];
+                }
+            }
+        }
+        return result;
+    }
+
     _doRotate(isRight) {
         const { currentFigure, currentFigureX, currentFigureY } = this;
-        const newFigure = isRight ? this.rotateFigureRight(currentFigure) : this.rotateFigureLeft(currentFigure);
+        const newFigure = this._rotateFigure(currentFigure, isRight);
 
         if (this._isFigureOutOfBounds(newFigure, currentFigureX, currentFigureY) || this._doesFigureOverlap(newFigure, currentFigureX, currentFigureY)) {
             return false;
@@ -261,10 +279,6 @@ class TetrisGame {
 
     _doRotateRight() {
         return this._doRotate(true);
-    }
-
-    _doMoveDown() {
-        return this._doMoveDown();
     }
 
     blastFilledRows() {

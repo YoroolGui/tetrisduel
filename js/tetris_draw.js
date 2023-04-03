@@ -1,13 +1,13 @@
-function drawCell(ctx, x, y, size, cellState) {
+function drawCell(game, ctx, x, y, size, cellState) {
     let color = '#f2f2f2';
     const figureColors = new Map([
-        [FIGURE_I, '#00FFFF'],
-        [FIGURE_J, '#0000FF'],
-        [FIGURE_L, '#FFA500'],
-        [FIGURE_O, '#FFFF00'],
-        [FIGURE_S, '#00FF00'],
-        [FIGURE_T, '#800080'],
-        [FIGURE_Z, '#FF0000']
+        [game.FIGURE_I, '#00FFFF'],
+        [game.FIGURE_J, '#0000FF'],
+        [game.FIGURE_L, '#FFA500'],
+        [game.FIGURE_O, '#FFFF00'],
+        [game.FIGURE_S, '#00FF00'],
+        [game.FIGURE_T, '#800080'],
+        [game.FIGURE_Z, '#FF0000']
     ]);
     if (figureColors.has(cellState)) {
         color = figureColors.get(cellState);
@@ -29,7 +29,7 @@ function drawTetrisGame(game, ctx) {
     for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
             const cellState = game.getCellState(row, col);
-            drawCell(ctx, col, rows - 1 - row, cellSize, cellState);
+            drawCell(game, ctx, col, rows - 1 - row, cellSize, cellState);
         }
     }
 }
