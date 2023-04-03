@@ -1,3 +1,33 @@
+// The Tetris game logic
+// Interface methods and constants are defined in the TetrisGame class:
+//
+// Constants:
+// - EMPTY_CELL - the value of an empty cell
+// - BLASTED_CELL - the value of a cell that has been blasted
+// - FIGURE_CELL_BASE - the base value of a cell that contains a figure
+// - FIGURE_I - the value of a cell that contains a figure of type I
+// - FIGURE_J - the value of a cell that contains a figure of type J
+// - FIGURE_L - the value of a cell that contains a figure of type L
+// - FIGURE_O - the value of a cell that contains a figure of type O
+// - FIGURE_S - the value of a cell that contains a figure of type S
+// - FIGURE_T - the value of a cell that contains a figure of type T
+// - FIGURE_Z - the value of a cell that contains a figure of type Z
+//
+// Functions:
+// - getRows() - returns the number of rows in the game field
+// - getColumns() - returns the number of columns in the game field
+// - getCellState(row, column) - returns the state of the cell at the specified position
+// - moveLeft() - moves the current figure to the left
+// - moveRight() - moves the current figure to the right
+// - rotateLeft() - rotates the current figure to the left
+// - rotateRight() - rotates the current figure to the right
+// - moveDown() - moves the current figure down
+// - step() - performs one game step
+// - newFigure() - creates a new figure
+// - blastFilledRows() - blasts filled rows and returns the number of blasted rows
+// - clearBlast() - replaces all BLASTED_CELL cells with EMPTY_CELL cells
+// - fall() - drops groups of cells down to fill the gaps created by blasting rows
+
 class TetrisGame {
     // Constants
     static EMPTY_CELL = 0;
@@ -68,7 +98,7 @@ class TetrisGame {
 
     newFigure() {
         if (this.currentFigure !== null) {
-            this.drawFigure(this.currentFigure, this.currentFigureX, this.currentFigureY);
+            this._drawFigure(this.currentFigure, this.currentFigureX, this.currentFigureY);
         }
 
         const figures = [
@@ -90,15 +120,15 @@ class TetrisGame {
         this.currentFigureX = startX;
         this.currentFigureY = 0;
 
-        if (this.doesFigureOverlap(this.currentFigure, this.currentFigureX, this.currentFigureY)) {
+        if (this._doesFigureOverlap(this.currentFigure, this.currentFigureX, this.currentFigureY)) {
             return false;
         } else {
-            this.drawFigure(this.currentFigure, this.currentFigureX, this.currentFigureY);
+            this._drawFigure(this.currentFigure, this.currentFigureX, this.currentFigureY);
             return true;
         }
     }
 
-    clearFigure(figure, x, y) {
+    _clearFigure(figure, x, y) {
         for (let i = 0; i < figure.length; i++) {
             for (let j = 0; j < figure[i].length; j++) {
                 if (figure[i][j] !== 0) {
@@ -108,7 +138,7 @@ class TetrisGame {
         }
     }
 
-    drawFigure(figure, x, y) {
+    _drawFigure(figure, x, y) {
         for (let i = 0; i < figure.length; i++) {
             for (let j = 0; j < figure[i].length; j++) {
                 if (figure[i][j] !== 0) {
@@ -118,7 +148,7 @@ class TetrisGame {
         }
     }
 
-    doesFigureOverlap(figure, x, y) {
+    _doesFigureOverlap(figure, x, y) {
         for (let i = 0; i < figure.length; i++) {
             for (let j = 0; j < figure[0].length; j++) {
                 const row = y + i;
@@ -133,7 +163,7 @@ class TetrisGame {
         return false;
     }
 
-    isFigureOutOfBounds(figure, x, y) {
+    _isFigureOutOfBounds(figure, x, y) {
         for (let i = 0; i < figure.length; i++) {
             for (let j = 0; j < figure[0].length; j++) {
                 const row = y + i;
@@ -153,88 +183,88 @@ class TetrisGame {
 
         switch (command) {
             case "left":
-                this.doMoveLeft();
+                this._doMoveLeft();
                 break;
             case "right":
-                this.doMoveRight();
+                this._doMoveRight();
                 break;
             case "rotate-left":
-                this.doRotateLeft();
+                this._doRotateLeft();
                 break;
             case "rotate-right":
-                this.doRotateRight();
+                this._doRotateRight();
                 break;
             case "down":
-                this.doMoveDown();
+                this._doMoveDown();
                 break;
             default:
                 break;
         }
     }
 
-    doMoveSide(isRight) {
+    _doMoveSide(isRight) {
         const { currentFigure, currentFigureX, currentFigureY } = this;
         const newFigureX = isRight ? currentFigureX + 1 : currentFigureX - 1;
 
-        if (this.isFigureOutOfBounds(currentFigure, newFigureX, currentFigureY) || this.doesFigureOverlap(currentFigure, newFigureX, currentFigureY)) {
+        if (this._isFigureOutOfBounds(currentFigure, newFigureX, currentFigureY) || this._doesFigureOverlap(currentFigure, newFigureX, currentFigureY)) {
             return false;
         }
 
-        this.clearFigure(currentFigure, currentFigureX, currentFigureY);
-        this.drawFigure(currentFigure, newFigureX, currentFigureY);
+        this._clearFigure(currentFigure, currentFigureX, currentFigureY);
+        this._drawFigure(currentFigure, newFigureX, currentFigureY);
         this.currentFigureX = newFigureX;
 
         return true;
     }
 
-    doRotate(isRight) {
+    _doRotate(isRight) {
         const { currentFigure, currentFigureX, currentFigureY } = this;
         const newFigure = isRight ? this.rotateFigureRight(currentFigure) : this.rotateFigureLeft(currentFigure);
 
-        if (this.isFigureOutOfBounds(newFigure, currentFigureX, currentFigureY) || this.doesFigureOverlap(newFigure, currentFigureX, currentFigureY)) {
+        if (this._isFigureOutOfBounds(newFigure, currentFigureX, currentFigureY) || this._doesFigureOverlap(newFigure, currentFigureX, currentFigureY)) {
             return false;
         }
 
-        this.clearFigure(currentFigure, currentFigureX, currentFigureY);
-        this.drawFigure(newFigure, currentFigureX, currentFigureY);
+        this._clearFigure(currentFigure, currentFigureX, currentFigureY);
+        this._drawFigure(newFigure, currentFigureX, currentFigureY);
         this.currentFigure = newFigure;
 
         return true;
     }
 
-    doMoveDown() {
+    _doMoveDown() {
         const { currentFigure, currentFigureX, currentFigureY } = this;
         const newFigureY = currentFigureY + 1;
 
-        if (this.isFigureOutOfBounds(currentFigure, currentFigureX, newFigureY) || this.doesFigureOverlap(currentFigure, currentFigureX, newFigureY)) {
+        if (this._isFigureOutOfBounds(currentFigure, currentFigureX, newFigureY) || this._doesFigureOverlap(currentFigure, currentFigureX, newFigureY)) {
             return false;
         }
 
-        this.clearFigure(currentFigure, currentFigureX, currentFigureY);
-        this.drawFigure(currentFigure, currentFigureX, newFigureY);
+        this._clearFigure(currentFigure, currentFigureX, currentFigureY);
+        this._drawFigure(currentFigure, currentFigureX, newFigureY);
         this.currentFigureY = newFigureY;
 
         return true;
     }
 
-    doMoveLeft() {
-        return this.doMoveSide(false);
+    _doMoveLeft() {
+        return this._doMoveSide(false);
     }
 
-    doMoveRight() {
-        return this.doMoveSide(true);
+    _doMoveRight() {
+        return this._doMoveSide(true);
     }
 
-    doRotateLeft() {
-        return this.doRotate(false);
+    _doRotateLeft() {
+        return this._doRotate(false);
     }
 
-    doRotateRight() {
-        return this.doRotate(true);
+    _doRotateRight() {
+        return this._doRotate(true);
     }
 
-    doMoveDown() {
-        return this.doMoveDown();
+    _doMoveDown() {
+        return this._doMoveDown();
     }
 
     blastFilledRows() {
