@@ -1,13 +1,28 @@
 class TetrisGame {
     // Constants
-    static FIGURE_TYPES = ["I", "O", "T", "S", "Z", "J", "L"];
     static EMPTY_CELL = 0;
     static BLASTED_CELL = -1;
+    static FIGURE_CELL_BASE = 1;
+    static FIGURE_I = 1;
+    static FIGURE_J = 2;
+    static FIGURE_L = 3;
+    static FIGURE_O = 4;
+    static FIGURE_S = 5;
+    static FIGURE_T = 6;
+    static FIGURE_Z = 7;
+
+    field;
+    rows;
+    columns;
+    currentFigure;
+    currentFigureX;
+    currentFigureY;
+    commandQueue;
 
     constructor(rows, columns) {
         this.rows = rows;
         this.columns = columns;
-        this.field = new Array(rows).fill().map(() => new Array(columns).fill(0));
+        this.field = Array(rows).fill().map(() => Array(columns).fill(TetrisGame.EMPTY_CELL));
         this.commandQueue = [];
         this.currentFigure = null;
         this.currentFigureX = 0;
@@ -25,14 +40,10 @@ class TetrisGame {
     }
 
     getCellState(row, column) {
-        const cellValue = this.field[row][column];
-        if (cellValue === TetrisGame.EMPTY_CELL) {
-            return "Empty";
-        } else if (cellValue === TetrisGame.BLASTED_CELL) {
-            return "Blast";
-        } else {
-            return `Figure${this.currentFigure.type}`;
+        if (row >= 0 && row < this.rows && column >= 0 && column < this.columns) {
+            return this.field[row][column];
         }
+        return null;
     }
 
     moveLeft() {
@@ -57,32 +68,33 @@ class TetrisGame {
 
     newFigure() {
         if (this.currentFigure !== null) {
-            this.lockFigure(this.currentFigure, this.currentFigureX, this.currentFigureY);
+            this.drawFigure(this.currentFigure, this.currentFigureX, this.currentFigureY);
         }
 
         const figures = [
-            [[1, 1], [1, 1]],
-            [[0, 2, 0], [2, 2, 2]],
-            [[0, 3, 3], [3, 3, 0]],
-            [[4, 4, 0], [0, 4, 4]],
-            [[0, 5, 0], [5, 5, 5,]],
-            [[6, 6, 6, 6]],
-            [[0, 7, 0, 0], [0, 7, 7, 7]],
+            { id: TetrisGame.FIGURE_I, shape: [[1, 1, 1, 1]] },
+            { id: TetrisGame.FIGURE_J, shape: [[1, 1, 1], [0, 0, 1]] },
+            { id: TetrisGame.FIGURE_L, shape: [[0, 0, 1], [1, 1, 1]] },
+            { id: TetrisGame.FIGURE_O, shape: [[1, 1], [1, 1]] },
+            { id: TetrisGame.FIGURE_S, shape: [[0, 1, 1], [1, 1, 0]] },
+            { id: TetrisGame.FIGURE_T, shape: [[1, 1, 1], [0, 1, 0]] },
+            { id: TetrisGame.FIGURE_Z, shape: [[1, 1, 0], [0, 1, 1]] },
         ];
 
         const figureIndex = Math.floor(Math.random() * figures.length);
-        const figure = figures[figureIndex];
-        const figureWidth = figure[0].length;
+        const { id, shape } = figures[figureIndex];
+        const figureWidth = shape[0].length;
         const startX = Math.floor((this.columns - figureWidth) / 2);
 
-        this.currentFigure = figure;
+        this.currentFigure = shape.map(row => row.map(cell => cell * id));
         this.currentFigureX = startX;
         this.currentFigureY = 0;
 
-        for (let i = 0; i < figure.length; i++) {
-            for (let j = 0; j < figureWidth; j++) {
-                this.field[i][startX + j] = figure[i][j];
-            }
+        if (this.doesFigureOverlap(this.currentFigure, this.currentFigureX, this.currentFigureY)) {
+            return false;
+        } else {
+            this.drawFigure(this.currentFigure, this.currentFigureX, this.currentFigureY);
+            return true;
         }
     }
 
