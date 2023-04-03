@@ -139,9 +139,11 @@ class TetrisGame {
     }
 
     _drawFigure(figure, x, y) {
+        console.log("drawFigure", x, y);
         for (let i = 0; i < figure.length; i++) {
             for (let j = 0; j < figure[i].length; j++) {
                 if (figure[i][j] !== 0) {
+                    console.log("draw", y + i, x + j, figure[i][j]);
                     this.field[y + i][x + j] = figure[i][j];
                 }
             }
@@ -149,17 +151,21 @@ class TetrisGame {
     }
 
     _doesFigureOverlap(figure, x, y) {
+        console.log("doesFigureOverlap", x, y);
         for (let i = 0; i < figure.length; i++) {
             for (let j = 0; j < figure[0].length; j++) {
                 const row = y + i;
                 const col = x + j;
+                console.log("fig", i, j, figure[i][j]);
+                console.log("fld", row, col, this.field[row][col]);
 
                 if (figure[i][j] && this.field[row][col]) {
+                    console.log("overlap");
                     return true;
                 }
             }
         }
-
+        console.log("no overlap");
         return false;
     }
 

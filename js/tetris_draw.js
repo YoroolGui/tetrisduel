@@ -1,14 +1,15 @@
-function drawCell(game, ctx, x, y, size, cellState, offsetX, offsetY) {
+function drawCell(ctx, x, y, size, cellState, offsetX, offsetY) {
     const padding = 1;
     let color = '#f2f2f2';
     const figureColors = new Map([
-        [game.FIGURE_I, '#00FFFF'],
-        [game.FIGURE_J, '#0000FF'],
-        [game.FIGURE_L, '#FFA500'],
-        [game.FIGURE_O, '#FFFF00'],
-        [game.FIGURE_S, '#00FF00'],
-        [game.FIGURE_T, '#800080'],
-        [game.FIGURE_Z, '#FF0000']
+        [TetrisGame.FIGURE_I, '#00FFFF'],
+        [TetrisGame.FIGURE_J, '#0000FF'],
+        [TetrisGame.FIGURE_L, '#FFA500'],
+        [TetrisGame.FIGURE_O, '#FFFF00'],
+        [TetrisGame.FIGURE_S, '#00FF00'],
+        [TetrisGame.FIGURE_T, '#800080'],
+        [TetrisGame.FIGURE_Z, '#FF0000'],
+        [TetrisGame.BLASTED_CELL, '#FFFFFF']
     ]);
     if (figureColors.has(cellState)) {
         color = figureColors.get(cellState);
@@ -32,7 +33,7 @@ function drawTetrisGame(game, ctx) {
     for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
             const cellState = game.getCellState(row, col);
-            drawCell(game, ctx, col, row, cellSize, cellState, offsetX, 0);
+            drawCell(ctx, col, row, cellSize, cellState, offsetX, 0);
         }
     }
 }
