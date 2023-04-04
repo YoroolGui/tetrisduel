@@ -24,8 +24,7 @@
 // - moveDown() - moves the current figure down
 // - step() - performs one game step
 // - newFigure() - creates a new figure
-// - blastFilledRows() - blasts filled rows and returns the number of blasted rows
-// - clearBlast() - replaces all BLASTED_CELL cells with EMPTY_CELL cells
+// - blast() - blasts filled rows
 // - fall() - drops groups of cells down to fill the gaps created by blasting rows
 
 class TetrisGame {
@@ -48,6 +47,8 @@ class TetrisGame {
     currentFigureX;
     currentFigureY;
     commandQueue;
+    locked;
+    falling;
 
     constructor(rows, columns) {
         this.rows = rows;
@@ -57,6 +58,8 @@ class TetrisGame {
         this.currentFigure = null;
         this.currentFigureX = 0;
         this.currentFigureY = 0;
+        this.locked = false;
+        this.falling = false;
         this.newFigure();
     }
 
@@ -96,10 +99,17 @@ class TetrisGame {
         this.commandQueue.push("down");
     }
 
+    fall() {
+        this.commandQueue.push("fall");
+    }
+
+    blast() {
+        this.commandQueue.push("blast");
+    }
+
     newFigure() {
-        if (this.currentFigure !== null) {
-            this._drawFigure(this.currentFigure, this.currentFigureX, this.currentFigureY);
-        }
+
+        this.locked = false;
 
         const figures = [
             { id: TetrisGame.FIGURE_I, shape: [[1, 1, 1, 1]] },
@@ -132,18 +142,16 @@ class TetrisGame {
         for (let i = 0; i < figure.length; i++) {
             for (let j = 0; j < figure[i].length; j++) {
                 if (figure[i][j] !== 0) {
-                    this.field[y + i][x + j] = 0;
+                    this.field[y + i][x + j] = TetrisGame.EMPTY_CELL;
                 }
             }
         }
     }
 
     _drawFigure(figure, x, y) {
-        console.log("drawFigure", x, y);
         for (let i = 0; i < figure.length; i++) {
             for (let j = 0; j < figure[i].length; j++) {
                 if (figure[i][j] !== 0) {
-                    console.log("draw", y + i, x + j, figure[i][j]);
                     this.field[y + i][x + j] = figure[i][j];
                 }
             }
@@ -151,21 +159,15 @@ class TetrisGame {
     }
 
     _doesFigureOverlap(figure, x, y) {
-        console.log("doesFigureOverlap", x, y);
         for (let i = 0; i < figure.length; i++) {
             for (let j = 0; j < figure[0].length; j++) {
                 const row = y + i;
                 const col = x + j;
-                console.log("fig", i, j, figure[i][j]);
-                console.log("fld", row, col, this.field[row][col]);
-
                 if (figure[i][j] && this.field[row][col]) {
-                    console.log("overlap");
                     return true;
                 }
             }
         }
-        console.log("no overlap");
         return false;
     }
 
@@ -185,42 +187,65 @@ class TetrisGame {
     }
 
     step() {
+        if (this.locked) {
+            return;
+        }
         const command = this.commandQueue.shift();
-
+        var res = undefined;
         switch (command) {
             case "left":
-                this._doMoveLeft();
+                res = this._doMoveLeft();
                 break;
             case "right":
-                this._doMoveRight();
+                res = this._doMoveRight();
                 break;
             case "rotate-left":
-                this._doRotateLeft();
+                res = this._doRotateLeft();
                 break;
             case "rotate-right":
-                this._doRotateRight();
+                res = this._doRotateRight();
                 break;
             case "down":
-                this._doMoveDown();
+                res = this._doMoveDown();
+                if (!res) {
+                    this.locked = true;
+                    this.commandQueue = [];
+                }
+                break;
+            case "fall":
+                if (this.falling) {
+                    this._doClearBlast();
+                    this.falling = this._doFall() > 0;
+                }
+                break;
+            case "blast":
+                if (this._doBlastFilledRows() > 0) {
+                    this.falling = true;
+                }
                 break;
             default:
                 break;
         }
+        // check if res is not undefined
+        if (res !== undefined)
+            console.log(command, res, this.currentFigureX, this.currentFigureY);
     }
 
     _doMoveSide(isRight) {
         const { currentFigure, currentFigureX, currentFigureY } = this;
         const newFigureX = isRight ? currentFigureX + 1 : currentFigureX - 1;
 
-        if (this._isFigureOutOfBounds(currentFigure, newFigureX, currentFigureY) || this._doesFigureOverlap(currentFigure, newFigureX, currentFigureY)) {
+        if (this._isFigureOutOfBounds(currentFigure, newFigureX, currentFigureY)) {
             return false;
         }
 
         this._clearFigure(currentFigure, currentFigureX, currentFigureY);
-        this._drawFigure(currentFigure, newFigureX, currentFigureY);
-        this.currentFigureX = newFigureX;
+        const isOverlap = this._doesFigureOverlap(currentFigure, newFigureX, currentFigureY);
+        if (isOverlap) { console.log("overlap"); }
+        if (!isOverlap) this.currentFigureX = newFigureX;
+        this._drawFigure(currentFigure, this.currentFigureX, currentFigureY);
 
-        return true;
+        return !isOverlap;
     }
 
     _rotateFigure(arr, isRight) {
@@ -244,31 +269,27 @@ class TetrisGame {
     _doRotate(isRight) {
         const { currentFigure, currentFigureX, currentFigureY } = this;
         const newFigure = this._rotateFigure(currentFigure, isRight);
-
-        if (this._isFigureOutOfBounds(newFigure, currentFigureX, currentFigureY) || this._doesFigureOverlap(newFigure, currentFigureX, currentFigureY)) {
+        if (this._isFigureOutOfBounds(newFigure, currentFigureX, currentFigureY)) {
             return false;
         }
-
         this._clearFigure(currentFigure, currentFigureX, currentFigureY);
-        this._drawFigure(newFigure, currentFigureX, currentFigureY);
-        this.currentFigure = newFigure;
-
-        return true;
+        let res = !this._doesFigureOverlap(newFigure, currentFigureX, currentFigureY)
+        if (res) this.currentFigure = newFigure;
+        this._drawFigure(this.currentFigure, currentFigureX, currentFigureY);
+        return res;
     }
 
     _doMoveDown() {
         const { currentFigure, currentFigureX, currentFigureY } = this;
         const newFigureY = currentFigureY + 1;
-
-        if (this._isFigureOutOfBounds(currentFigure, currentFigureX, newFigureY) || this._doesFigureOverlap(currentFigure, currentFigureX, newFigureY)) {
+        if (this._isFigureOutOfBounds(currentFigure, currentFigureX, newFigureY)) {
             return false;
         }
-
         this._clearFigure(currentFigure, currentFigureX, currentFigureY);
-        this._drawFigure(currentFigure, currentFigureX, newFigureY);
-        this.currentFigureY = newFigureY;
-
-        return true;
+        const isOverlap = this._doesFigureOverlap(currentFigure, currentFigureX, newFigureY);
+        if (!isOverlap) this.currentFigureY = newFigureY;
+        this._drawFigure(currentFigure, currentFigureX, this.currentFigureY);
+        return !isOverlap;
     }
 
     _doMoveLeft() {
@@ -287,7 +308,11 @@ class TetrisGame {
         return this._doRotate(true);
     }
 
-    blastFilledRows() {
+    isLocked() {
+        return this.locked;
+    }
+
+    _doBlastFilledRows() {
         let count = 0;
         for (let i = 0; i < this.rows; i++) {
             if (this.field[i].every(cell => cell !== 0)) {
@@ -298,7 +323,7 @@ class TetrisGame {
         return count;
     }
 
-    clearBlast() {
+    _doClearBlast() {
         for (let i = 0; i < this.rows; i++) {
             for (let j = 0; j < this.columns; j++) {
                 if (this.field[i][j] === TetrisGame.BLASTED_CELL) {
@@ -308,7 +333,7 @@ class TetrisGame {
         }
     }
 
-    fall() {
+    _doFall() {
         let distance = 0;
         const groups = [];
 
