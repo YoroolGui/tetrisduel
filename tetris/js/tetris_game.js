@@ -243,9 +243,6 @@ class TetrisGame {
             default:
                 break;
         }
-        // check if res is not undefined
-        if (res !== undefined)
-            console.log(command, res, this.currentFigureX, this.currentFigureY);
     }
 
     _doMoveSide(isRight) {
@@ -257,7 +254,6 @@ class TetrisGame {
         }
 
         const isOverlap = this._doesFigureOverlap(currentFigure, newFigureX, currentFigureY);
-        if (isOverlap) { console.log("overlap"); }
         if (!isOverlap) this.currentFigureX = newFigureX;
 
         return !isOverlap;
