@@ -67,8 +67,16 @@
 
         setInterval(function () {
             tetrisGame.blast();
+        }, 100);
+
+        setInterval(function () {
+            tetrisGame.clearBlast();
+        }, 500);
+
+        setInterval(function () {
             tetrisGame.fall();
-        }, 300);
+        }, 200);
+
 
         setInterval(function () {
             tetrisGame.step();

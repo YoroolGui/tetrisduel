@@ -107,6 +107,10 @@ class TetrisGame {
         this.commandQueue.push("blast");
     }
 
+    clearBlast() {
+        this.commandQueue.push("clear-blast");
+    }
+
     newFigure() {
 
         this.locked = false;
@@ -214,12 +218,14 @@ class TetrisGame {
                 break;
             case "fall":
                 if (this.falling) {
-                    this._doClearBlast();
-                    this.falling = this._doFall() > 0;
+                    this.falling = this._doFall();
                 }
                 break;
             case "blast":
-                if (this._doBlastFilledRows() > 0) {
+                this._doBlastFilledRows();
+                break;
+            case "clear-blast":
+                if (this._doClearBlast()) {
                     this.falling = true;
                 }
                 break;
@@ -320,73 +326,96 @@ class TetrisGame {
                 count++;
             }
         }
+        if (count > 0)
+            console.log("blasted", count);
         return count;
     }
 
     _doClearBlast() {
+        let foundBlasted = false;
         for (let i = 0; i < this.rows; i++) {
             for (let j = 0; j < this.columns; j++) {
                 if (this.field[i][j] === TetrisGame.BLASTED_CELL) {
                     this.field[i][j] = TetrisGame.EMPTY_CELL;
+                    foundBlasted = true;
                 }
             }
         }
+        return foundBlasted;
     }
 
     _doFall() {
-        let distance = 0;
-        const groups = [];
+        this._clearFigure(this.currentFigure, this.currentFigureX, this.currentFigureY);
 
+        let moved = false;
         // Create groups of connected cells
-        for (let i = 0; i < this.rows; i++) {
-            for (let j = 0; j < this.columns; j++) {
-                if (this.field[i][j] !== TetrisGame.EMPTY_CELL) {
-                    const neighbors = [];
-                    let belongsToGroup = false;
+        let groups = getConnectedNonZeroCoords(this.field);
 
-                    // Check if the cell is touching any existing group
-                    for (let group of groups) {
-                        if (group.some(([x, y]) => Math.abs(x - i) + Math.abs(y - j) === 1)) {
-                            group.push([i, j]);
-                            belongsToGroup = true;
-                            break;
-                        }
-                    }
-
-                    // If the cell is not touching any existing group, create a new group
-                    if (!belongsToGroup) {
-                        groups.push([[i, j]]);
-                    }
-                }
-            }
-        }
-
-        // Move each group down as a whole until it reaches the bottom of the field or overlaps with non-empty cells
+        // Move each group down as a whole one row at a time
         for (let group of groups) {
-            let canMove = true;
-            while (canMove) {
+            sortBottomToTop(group);
+            let canMove = group[0][0] < this.rows - 1;
+            if (canMove) {
+                moved = true;
                 for (let [i, j] of group) {
-                    if (i + distance + 1 >= this.rows || this.field[i + distance + 1][j] !== TetrisGame.EMPTY_CELL) {
-                        canMove = false;
-                        break;
-                    }
-                }
-                if (canMove) {
-                    distance++;
+                    this.field[i + 1][j] = this.field[i][j];
+                    this.field[i][j] = TetrisGame.EMPTY_CELL;
                 }
             }
-
-            // Update the field with the new positions of the cells in the group
-            for (let [i, j] of group) {
-                this.field[i + distance][j] = this.field[i][j];
-                this.field[i][j] = TetrisGame.EMPTY_CELL;
-            }
-
-            // Update the total distance that the cells were moved down
-            distance = Math.max(distance, 0);
-            distance += group.some(([i, j]) => i + distance === this.rows - 1) ? 0 : 1;
         }
 
-        return distance;
+        this._drawFigure(this.currentFigure, this.currentFigureX, this.currentFigureY);
+
+        return moved;
     }
+}
+
+function sortBottomToTop(arr) {
+    return arr.sort(function (a, b) {
+        return b[0] - a[0];
+    });
+}
+
+function getConnectedNonZeroCoords(matrix) {
+    const rows = matrix.length;
+    const cols = matrix[0].length;
+    const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+    const groups = [];
+
+    function isValid(x, y) {
+        return x >= 0 && x < rows && y >= 0 && y < cols;
+    }
+
+    const neighbors = [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1]
+    ];
+
+    function dfs(x, y, group) {
+        visited[x][y] = true;
+        group.push([x, y]);
+
+        for (const [dx, dy] of neighbors) {
+            const newX = x + dx;
+            const newY = y + dy;
+
+            if (isValid(newX, newY) && !visited[newX][newY] && matrix[newX][newY] !== 0) {
+                dfs(newX, newY, group);
+            }
+        }
+    }
+
+    for (let x = 0; x < rows; x++) {
+        for (let y = 0; y < cols; y++) {
+            if (!visited[x][y] && matrix[x][y] !== 0) {
+                const group = [];
+                dfs(x, y, group);
+                groups.push(group);
+            }
+        }
+    }
+
+    return groups;
 }
