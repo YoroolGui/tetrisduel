@@ -67,19 +67,19 @@
 
         setInterval(function () {
             tetrisGame.blast();
-        }, 100);
-
-        setInterval(function () {
-            tetrisGame.clearBlast();
-        }, 500);
+        }, 10);
 
         setInterval(function () {
             tetrisGame.fall();
-        }, 200);
-
+        }, 3000);
 
         setInterval(function () {
             tetrisGame.step();
+            if (tetrisGame.isBlasted()) {
+                setTimeout(function () {
+                    tetrisGame.clearBlast();
+                }, 500);
+            }
             redraw();
         }, 1);
 

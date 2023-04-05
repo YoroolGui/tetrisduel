@@ -1,3 +1,26 @@
+function drawExplosion(ctx, x, y, h, w) {
+    // Draw explosion
+    ctx.fillStyle = '#ff9900';
+    ctx.beginPath();
+    ctx.arc(x + w / 2, y + h / 2, w / 3, 0, 2 * Math.PI);
+    ctx.fill();
+
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath();
+    ctx.arc(x + w / 2, y + h / 2, w / 5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffff00';
+    ctx.beginPath();
+    ctx.arc(x + w / 2, y + h / 2, w / 8, 0, 2 * Math.PI);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(x + w / 2, y + h / 2, w / 15, 0, 2 * Math.PI);
+    ctx.fill();
+}
+
 function drawCell(ctx, x, y, size, cellState, offsetX, offsetY) {
     const padding = 1;
     let color = '#f2f2f2';
@@ -9,13 +32,13 @@ function drawCell(ctx, x, y, size, cellState, offsetX, offsetY) {
         [TetrisGame.FIGURE_S, '#00FF00'],
         [TetrisGame.FIGURE_T, '#800080'],
         [TetrisGame.FIGURE_Z, '#FF0000'],
-        [TetrisGame.BLASTED_CELL, '#FFFFFF']
     ]);
     if (figureColors.has(cellState)) {
-        color = figureColors.get(cellState);
+        ctx.fillStyle = figureColors.get(cellState);
+        ctx.fillRect(x * size + padding + offsetX, y * size + padding + offsetY, size - 2 * padding, size - 2 * padding);
+    } else if (cellState === TetrisGame.BLASTED_CELL) {
+        drawExplosion(ctx, x * size + offsetX, y * size + offsetY, size, size);
     }
-    ctx.fillStyle = color;
-    ctx.fillRect(x * size + padding + offsetX, y * size + padding + offsetY, size - 2 * padding, size - 2 * padding);
 }
 
 function drawTetrisGame(game, ctx) {

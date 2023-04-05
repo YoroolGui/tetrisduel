@@ -49,6 +49,7 @@ class TetrisGame {
     commandQueue;
     locked;
     falling;
+    blasted;
 
     constructor(rows, columns) {
         this.rows = rows;
@@ -60,6 +61,7 @@ class TetrisGame {
         this.currentFigureY = 0;
         this.locked = false;
         this.falling = false;
+        this.blasted = false;
         this.newFigure();
     }
 
@@ -112,7 +114,6 @@ class TetrisGame {
     }
 
     newFigure() {
-
         this.locked = false;
 
         const figures = [
@@ -222,10 +223,12 @@ class TetrisGame {
                 }
                 break;
             case "blast":
-                this._doBlastFilledRows();
+                this.blasted = this._doBlastFilledRows() > 0;
                 break;
             case "clear-blast":
-                if (this._doClearBlast()) {
+                if (this.blasted) {
+                    this._doClearBlast()
+                    this.blasted = false;
                     this.falling = true;
                 }
                 break;
@@ -318,6 +321,14 @@ class TetrisGame {
         return this.locked;
     }
 
+    isFalling() {
+        return this.falling;
+    }
+
+    isBlasted() {
+        return this.blasted;
+    }
+
     _doBlastFilledRows() {
         let count = 0;
         for (let i = 0; i < this.rows; i++) {
@@ -326,22 +337,17 @@ class TetrisGame {
                 count++;
             }
         }
-        if (count > 0)
-            console.log("blasted", count);
         return count;
     }
 
     _doClearBlast() {
-        let foundBlasted = false;
         for (let i = 0; i < this.rows; i++) {
             for (let j = 0; j < this.columns; j++) {
                 if (this.field[i][j] === TetrisGame.BLASTED_CELL) {
                     this.field[i][j] = TetrisGame.EMPTY_CELL;
-                    foundBlasted = true;
                 }
             }
         }
-        return foundBlasted;
     }
 
     _doFall() {
