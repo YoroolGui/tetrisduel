@@ -81,6 +81,28 @@ class TetrisGame {
         return null;
     }
 
+    getCellStateWithFigure(row, column) {
+        if (row >= 0 && row < this.rows && column >= 0 && column < this.columns) {
+            // Check if the cell is part of the current falling figure
+            if (row >= this.currentFigureY && row < this.currentFigureY + this.currentFigure.length &&
+                column >= this.currentFigureX && column < this.currentFigureX + this.currentFigure[0].length) {
+                // Calculate the relative coordinates of the cell within the current figure
+                let figureRow = row - this.currentFigureY;
+                let figureColumn = column - this.currentFigureX;
+
+                // If the current figure cell is not empty, return its value
+                if (this.currentFigure[figureRow][figureColumn] !== 0) {
+                    return this.currentFigure[figureRow][figureColumn];
+                }
+            }
+
+            // Return the field cell value if the cell is not part of the current figure
+            return this.field[row][column];
+        }
+        return null;
+    }
+
+
     moveLeft() {
         this.commandQueue.push("left");
     }
@@ -135,22 +157,7 @@ class TetrisGame {
         this.currentFigureX = startX;
         this.currentFigureY = 0;
 
-        if (this._doesFigureOverlap(this.currentFigure, this.currentFigureX, this.currentFigureY)) {
-            return false;
-        } else {
-            this._drawFigure(this.currentFigure, this.currentFigureX, this.currentFigureY);
-            return true;
-        }
-    }
-
-    _clearFigure(figure, x, y) {
-        for (let i = 0; i < figure.length; i++) {
-            for (let j = 0; j < figure[i].length; j++) {
-                if (figure[i][j] !== 0) {
-                    this.field[y + i][x + j] = TetrisGame.EMPTY_CELL;
-                }
-            }
-        }
+        return !this._doesFigureOverlap(this.currentFigure, this.currentFigureX, this.currentFigureY);
     }
 
     _drawFigure(figure, x, y) {
@@ -213,6 +220,7 @@ class TetrisGame {
             case "down":
                 res = this._doMoveDown();
                 if (!res) {
+                    this._drawFigure(this.currentFigure, this.currentFigureX, this.currentFigureY);
                     this.locked = true;
                     this.commandQueue = [];
                 }
@@ -248,11 +256,9 @@ class TetrisGame {
             return false;
         }
 
-        this._clearFigure(currentFigure, currentFigureX, currentFigureY);
         const isOverlap = this._doesFigureOverlap(currentFigure, newFigureX, currentFigureY);
         if (isOverlap) { console.log("overlap"); }
         if (!isOverlap) this.currentFigureX = newFigureX;
-        this._drawFigure(currentFigure, this.currentFigureX, currentFigureY);
 
         return !isOverlap;
     }
@@ -281,10 +287,8 @@ class TetrisGame {
         if (this._isFigureOutOfBounds(newFigure, currentFigureX, currentFigureY)) {
             return false;
         }
-        this._clearFigure(currentFigure, currentFigureX, currentFigureY);
         let res = !this._doesFigureOverlap(newFigure, currentFigureX, currentFigureY)
         if (res) this.currentFigure = newFigure;
-        this._drawFigure(this.currentFigure, currentFigureX, currentFigureY);
         return res;
     }
 
@@ -294,10 +298,8 @@ class TetrisGame {
         if (this._isFigureOutOfBounds(currentFigure, currentFigureX, newFigureY)) {
             return false;
         }
-        this._clearFigure(currentFigure, currentFigureX, currentFigureY);
         const isOverlap = this._doesFigureOverlap(currentFigure, currentFigureX, newFigureY);
         if (!isOverlap) this.currentFigureY = newFigureY;
-        this._drawFigure(currentFigure, currentFigureX, this.currentFigureY);
         return !isOverlap;
     }
 
@@ -351,8 +353,6 @@ class TetrisGame {
     }
 
     _doFall() {
-        this._clearFigure(this.currentFigure, this.currentFigureX, this.currentFigureY);
-
         let moved = false;
         // Create groups of connected cells
         let groups = getConnectedNonZeroCoords(this.field);
@@ -369,8 +369,6 @@ class TetrisGame {
                 }
             }
         }
-
-        this._drawFigure(this.currentFigure, this.currentFigureX, this.currentFigureY);
 
         return moved;
     }

@@ -55,7 +55,7 @@ function drawTetrisGame(game, ctx) {
 
     for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
-            const cellState = game.getCellState(row, col);
+            const cellState = game.getCellStateWithFigure(row, col);
             drawCell(ctx, col, row, cellSize, cellState, offsetX, 0);
         }
     }
