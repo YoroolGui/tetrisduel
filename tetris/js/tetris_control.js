@@ -2,6 +2,8 @@ class TetrisControl {
     game;
     canvas;
     ctx;
+    fall_figure_interval_ms = 1000;
+    fall_figure_interval_counter = 0;
 
     constructor(canvas, rows, columns) {
         this.canvas = canvas;
@@ -14,20 +16,32 @@ class TetrisControl {
         drawTetrisGame(this.game, this.ctx);
     }
 
+    _set_fall_figure_interval(ms) {
+        this.fall_figure_interval_ms = ms;
+    }
+
+    _fall_figure() {
+        this.fall_figure_interval_counter += 10;
+        if (this.fall_figure_interval_counter >= this.fall_figure_interval_ms) {
+            this.fall_figure_interval_counter = 0;
+            if (this.game.isLocked()) {
+                if (this.game.newFigure()) {
+                    this._set_fall_figure_interval(1000);
+                } else {
+                    alert("Game Over");
+                    this.game = new TetrisGame(20, 10);
+                }
+            } else {
+                this.game.moveDown();
+            }
+        }
+    }
+
     start() {
         this.bindEvent();
         var self = this;
 
-        setInterval(function () {
-            if (self.game.isLocked()) {
-                if (!self.game.newFigure()) {
-                    alert("Game Over");
-                    self.game = new TetrisGame(20, 10);
-                }
-            } else {
-                self.game.moveDown();
-            }
-        }, 1000);
+        setInterval(function () { self._fall_figure(); }, 10);
 
         setInterval(function () {
             self.game.blast();
@@ -47,7 +61,6 @@ class TetrisControl {
             self.redraw();
         }, 10);
     }
-
 
     bindEvent() {
         var self = this;
@@ -72,7 +85,7 @@ class TetrisControl {
                     self.game.moveDown();
                     break;
                 case " ":
-                    // self.game.drop();
+                    this._set_fall_figure_interval(100);
                     break;
             }
         }
