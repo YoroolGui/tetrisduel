@@ -45,13 +45,14 @@ function drawTetrisGame(game, ctx) {
     const rows = game.getRows();
     const cols = game.getColumns();
     const cellSize = Math.floor(ctx.canvas.height / (rows + 1));
-    const offsetX = cellSize; // Add offset for the left wall
+    const gameWidth = cols * cellSize;
+    const offsetX = Math.floor((ctx.canvas.width - gameWidth) / 2); // Calculate horizontal offset
     const offsetY = cellSize; // Add offset for the bottom wall
 
     ctx.fillStyle = '#333333';
-    ctx.fillRect(0, 0, offsetX, ctx.canvas.height);
-    ctx.fillRect((cols * cellSize) + offsetX, 0, offsetX, ctx.canvas.height);
-    ctx.fillRect(offsetX, ctx.canvas.height - offsetY, cols * cellSize, offsetY);
+    ctx.fillRect(offsetX - cellSize, 0, cellSize, ctx.canvas.height); // Adjust left wall position
+    ctx.fillRect(offsetX + gameWidth, 0, cellSize, ctx.canvas.height); // Adjust right wall position
+    ctx.fillRect(offsetX, ctx.canvas.height - offsetY, gameWidth, offsetY);
 
     for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
