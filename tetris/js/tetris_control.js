@@ -37,8 +37,8 @@ class TetrisControl {
         }
     }
 
+
     start() {
-        this.bindEvent();
         var self = this;
 
         setInterval(function () { self._fall_figure(); }, 10);
@@ -62,7 +62,23 @@ class TetrisControl {
         }, 10);
     }
 
-    bindEvent() {
+    bindButtons(left_id, rotate_id, down_di, right_id) {
+        var self = this;
+        document.getElementById(left_id).onclick = function () {
+            self.game.moveLeft();
+        }
+        document.getElementById(right_id).onclick = function () {
+            self.game.moveRight();
+        }
+        document.getElementById(rotate_id).onclick = function () {
+            self.game.rotateRight();
+        }
+        document.getElementById(down_di).onclick = function () {
+            self._set_fall_figure_interval(100);
+        }
+    }
+
+    bindKeys() {
         var self = this;
         document.onkeydown = (event) => {
             event.preventDefault();
@@ -85,7 +101,7 @@ class TetrisControl {
                     self.game.moveDown();
                     break;
                 case " ":
-                    this._set_fall_figure_interval(100);
+                    self._set_fall_figure_interval(100);
                     break;
             }
         }
