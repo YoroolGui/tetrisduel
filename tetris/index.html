@@ -33,8 +33,9 @@
     <div id="mobile-overlay">
         <div id="mobile-buttons">
             <button id="left-btn">&#8592;</button>
-            <button id="rotate-btn">&#8635;</button>
+            <button id="rotate-left-btn">&#x21BA;</button>
             <button id="down-btn">&#8595;</button>
+            <button id="rotate-right-btn">&#x21BB;</button>
             <button id="right-btn">&#8594;</button>
         </div>
     </div>
@@ -54,7 +55,7 @@
         var ctx = canvas.getContext("2d");
         var tetrisGame = new TetrisControl(canvas, 20, 10);
         tetrisGame.bindKeys();
-        tetrisGame.bindButtons("left-btn", "rotate-btn", "down-btn", "right-btn");
+        tetrisGame.bindButtons("left-btn", "rotate-left-btn", "down-btn", "rotate-right-btn", "right-btn");
 
         function setCanvasSize(width, height) {
             canvas.width = width;

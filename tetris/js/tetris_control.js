@@ -62,19 +62,22 @@ class TetrisControl {
         }, 10);
     }
 
-    bindButtons(left_id, rotate_id, down_di, right_id) {
+    bindButtons(left_id, rotate_left_id, down_di, rotate_right_id, right_id) {
         var self = this;
         document.getElementById(left_id).onclick = function () {
             self.game.moveLeft();
         }
-        document.getElementById(right_id).onclick = function () {
-            self.game.moveRight();
-        }
-        document.getElementById(rotate_id).onclick = function () {
-            self.game.rotateRight();
+        document.getElementById(rotate_left_id).onclick = function () {
+            self.game.rotateLeft();
         }
         document.getElementById(down_di).onclick = function () {
             self._set_fall_figure_interval(100);
+        }
+        document.getElementById(rotate_right_id).onclick = function () {
+            self.game.rotateRight();
+        }
+        document.getElementById(right_id).onclick = function () {
+            self.game.moveRight();
         }
     }
 
