@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Admin - Players list</title>
+</head>
+
+<body>
+    {{!-- Players list --}}
+    <h1>Players list</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each players}}
+            <tr>
+                <td>{{id}}</td>
+                <td>{{name}}</td>
+                <td>{{score}}</td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+</body>
