@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use rand::{rngs::ThreadRng, Rng};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -337,10 +339,22 @@ impl Tetromino {
     }
 }
 
+// Enum with all possible user actions
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum Action {
+    MoveLeft,
+    MoveRight,
+    MoveDown,
+    RotateLeft,
+    RotateRight,
+}
+
 struct Tetris {
     // Game field size
     width: usize,
     height: usize,
+    // Game over flag
+    game_over: bool,
     // Game field
     field: Vec<Vec<CellType>>,
     // Preview field
@@ -349,6 +363,8 @@ struct Tetris {
     current: Option<Tetromino>,
     // Next tetromino
     next: TetrominoType,
+    // User actions queue
+    actions: VecDeque<Action>,
     // Random number generator
     rng: rand::rngs::ThreadRng,
 }
@@ -372,15 +388,64 @@ impl Tetris {
         // Set next tetromino type
         let next = Self::create_next_tetromino_type(&mut rng, &mut preview);
 
+        // Create user actions queue
+        let actions = VecDeque::new();
+
+        // Set game over flag
+        let game_over = false;
+
         // Create new tetris game
         Tetris {
             width,
             height,
+            game_over,
             field,
             preview,
             current: None,
             next,
+            actions,
             rng,
+        }
+    }
+
+    // Add user action to actions queue
+    pub fn add_action(&mut self, action: Action) {
+        self.actions.push_back(action);
+    }
+
+    // Process single user action
+    pub fn step(&mut self) {
+        if self.game_over {
+            return;
+        }
+
+        // Do not process user actions until last blased line is removed
+        if (self.current.is_none()) {
+            if (self.remove_top_blasted_line()) {
+                return;
+            } else {
+                if (!self.place_next_tetromino()) {
+                    self.game_over = true;
+                    return;
+                }
+            }
+        }
+
+        let Some(action) = self.actions.pop_front() else {
+            return;
+        };
+        let succeed = match action {
+            Action::MoveLeft => self.move_left(),
+            Action::MoveRight => self.move_right(),
+            Action::MoveDown => self.move_down(),
+            Action::RotateLeft => self.rotate_left(),
+            Action::RotateRight => self.rotate_right(),
+        };
+        // Move down is special case. If it fails, fix current tetromino and blast full lines
+        if !succeed && action == Action::MoveDown {
+            self.fix_current_figure();
+            self.blast_full_lines();
+            self.actions.clear();
         }
     }
 
@@ -413,9 +478,7 @@ impl Tetris {
     }
 
     // Place new tetromino on the field. Return false if it's impossible to place new tetromino
-    pub fn place_new_tetromino(&mut self) -> bool {
-        // Place new tetromino on the field
-
+    pub fn place_next_tetromino(&mut self) -> bool {
         // Create new tetromino
         let new_tetromino = Tetromino::new(self.next, Rotation::R0, self.width as isize / 2 - 2, 0);
 
@@ -487,10 +550,10 @@ impl Tetris {
     }
 
     // Draw current tetromino on the field
-    pub fn draw_current(&mut self) {
+    pub fn fix_current_figure(&mut self) {
         // Draw current tetromino on the field
         // Check if current tetromino exists
-        if let Some(current) = &self.current {
+        if let Some(current) = self.current.take() {
             // Draw current tetromino on the field
             current.draw(&mut self.field);
         }
