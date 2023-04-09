@@ -514,6 +514,7 @@ name = "gameserver"
 version = "0.1.0"
 dependencies = [
  "persy",
+ "rand",
  "rocket",
  "rocket_dyn_templates",
 ]

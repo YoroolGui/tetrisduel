@@ -1,4 +1,5 @@
 mod error;
+mod tetris;
 
 use error::Error;
 use persy::Persy;
