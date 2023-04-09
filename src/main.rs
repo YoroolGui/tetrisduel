@@ -6,15 +6,14 @@ use persy::Persy;
 use rocket::{
     get,
     http::{Cookie, CookieJar},
-    routes, Ignite, Request, Rocket,
+    routes, Ignite, Rocket,
 };
 use rocket_dyn_templates::Template;
 
-// Root page handler, returns a string with html content
-#[get("/")]
-fn index(cookie_jar: &CookieJar) -> String {
+// Get user id from cookie, if cookie is not set, generate new user id and set cookie
+fn user_id(cookie_jar: &CookieJar) -> u32 {
     // Get user id from cookie
-    let user_id = if let Some(user_id) = cookie_jar
+    if let Some(user_id) = cookie_jar
         .get("user_id")
         .map(|v| v.value().parse::<u32>().ok())
         .flatten()
@@ -24,8 +23,13 @@ fn index(cookie_jar: &CookieJar) -> String {
         let user_id = rand::random::<u32>();
         cookie_jar.add(Cookie::new("user_id", user_id.to_string()));
         user_id
-    };
-    user_id.to_string()
+    }
+}
+
+// Root page handler, returns a string with html content
+#[get("/")]
+fn index(cookie_jar: &CookieJar) -> String {
+    user_id(cookie_jar).to_string()
 }
 
 // Admin page, returns a handlebars template
