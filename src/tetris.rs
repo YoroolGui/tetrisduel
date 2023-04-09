@@ -3,6 +3,7 @@ use rand::{rngs::ThreadRng, Rng};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum CellType {
     Empty,
+    Blasted,
     I,
     J,
     L,
@@ -493,5 +494,58 @@ impl Tetris {
             // Draw current tetromino on the field
             current.draw(&mut self.field);
         }
+    }
+
+    // Blasts full lines and returns true if there were full lines
+    fn blast_full_lines(&mut self) -> bool {
+        // Iterate over all lines
+        // If line is full, replace it's Empty cells to Blasted cells and set return value to true
+        let mut full_lines = false;
+        for y in 0..self.height {
+            let mut full_line = true;
+            for x in 0..self.width {
+                if self.field[y][x] == CellType::Empty {
+                    full_line = false;
+                    break;
+                }
+            }
+            if full_line {
+                full_lines = true;
+                for x in 0..self.width {
+                    self.field[y][x] = CellType::Blasted;
+                }
+            }
+        }
+        full_lines
+    }
+
+    // Find topmost blasted line and shift all lines above it down to one line
+    // Line is blasted if it's first cell is Blasted
+    // Return false if there are no blasted lines
+    fn remove_top_blasted_line(&mut self) -> bool {
+        // Find topmost blasted line
+        let mut top_blasted_line = None;
+        for y in 0..self.height {
+            if self.field[y][0] == CellType::Blasted {
+                top_blasted_line = Some(y);
+                break;
+            }
+        }
+        // If there are no blasted lines, return false
+        let Some(top_blasted_line) = top_blasted_line else {
+            return false;
+        };
+        // Shift all lines above topmost blasted line down to one line
+        for y in (0..top_blasted_line).rev() {
+            for x in 0..self.width {
+                self.field[y + 1][x] = self.field[y][x];
+            }
+        }
+        // Fill topmost line with Empty cells
+        for x in 0..self.width {
+            self.field[0][x] = CellType::Empty;
+        }
+        // Return true if there were blasted lines
+        true
     }
 }
