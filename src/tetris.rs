@@ -12,6 +12,8 @@ struct Tetris {
     current: Option<Tetromino>,
     // Next tetromino
     next: TetrominoType,
+    // Random number generator
+    rng: rand::rngs::ThreadRng,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -218,10 +220,8 @@ enum TetrominoType {
 
 impl TetrominoType {
     // new method returns new tetromino type
-    pub fn new() -> Self {
+    pub fn new(rng: &mut impl rand::Rng) -> Self {
         // Create new tetromino type
-        // Create random number generator
-        let mut rng = rand::thread_rng();
         // Create random number between 0 and 6
         let random_number = rng.gen_range(0..7);
         // Return new tetromino type
@@ -327,25 +327,27 @@ impl Tetromino {
         false
     }
 
-    // Get tetromino width
-    pub fn get_width(&self) -> usize {
-        // Return tetromino width
-        self.tetromino_type.get_width(&self.rotation)
-    }
-
-    // Get tetromino height
-    pub fn get_height(&self) -> usize {
-        // Return tetromino height
-        self.tetromino_type.get_height(&self.rotation)
-    }
-
-    // Get cell value of current TetrominoType
-    pub fn get_cell(&self, x: usize, y: usize) -> Option<TetrominoType> {
-        // Return cell value of current TetrominoType
-        if self.tetromino_type.get_cell(x, y, &self.rotation) {
-            Some(self.tetromino_type)
-        } else {
-            None
+    // Draw tetromino on field. If tetromino intersects with field borders, draw it partially.
+    // I.e for any cell position check is it inside field borders and if it is, draw it.
+    pub fn draw(&self, field: &mut Vec<Vec<CellType>>) {
+        // Draw tetromino on field
+        // Get tetromino width and height
+        let width = self.tetromino_type.get_width(&self.rotation);
+        let height = self.tetromino_type.get_height(&self.rotation);
+        let cell_type = self.tetromino_type.get_cell_type();
+        // Draw tetromino on field
+        for cell_y in 0..height {
+            for cell_x in 0..width {
+                if self.tetromino_type.get_cell(cell_x, cell_y, &self.rotation) {
+                    // Get cell position. Use isize type to avoid overflow
+                    // Check resulting positoins are positive and less than field borders
+                    let x = self.x + cell_x as isize;
+                    let y = self.y + cell_y as isize;
+                    if x >= 0 && x < field[0].len() as isize && y >= 0 && y < field.len() as isize {
+                        field[y as usize][x as usize] = cell_type;
+                    }
+                }
+            }
         }
     }
 }
@@ -358,13 +360,17 @@ impl Tetris {
             .map(|_| (0..width).map(|_| CellType::Empty).collect())
             .collect();
 
+        // Create random number generator
+        let mut rng = rand::thread_rng();
+
         // Create new tetris game
         Tetris {
             width,
             height,
             field,
             current: None,
-            next: TetrominoType::new(),
+            next: TetrominoType::new(&mut rng),
+            rng,
         }
     }
 
@@ -392,7 +398,7 @@ impl Tetris {
         // Set new tetromino as current
         self.current = Some(new_tetromino);
         // Set new tetromino type as next
-        self.next = TetrominoType::new();
+        self.next = TetrominoType::new(&mut self.rng);
         // Return true if new tetromino was placed on the field
         true
     }
@@ -451,22 +457,12 @@ impl Tetris {
     }
 
     // Draw current tetromino on the field
-    pub fn draw_current_tetromino(&mut self) {
+    pub fn draw_current(&mut self) {
         // Draw current tetromino on the field
         // Check if current tetromino exists
         if let Some(current) = &self.current {
-            // Get tetromino width and height
-            let width = current.get_width();
-            let height = current.get_height();
             // Draw current tetromino on the field
-            for cell_y in 0..height {
-                for cell_x in 0..width {
-                    if let Some(tetromino_type) = current.get_cell(cell_x, cell_y) {
-                        self.field[current.y as usize + cell_y][current.x as usize + cell_x] =
-                            tetromino_type.get_cell_type();
-                    }
-                }
-            }
+            current.draw(&mut self.field);
         }
     }
 }
