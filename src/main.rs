@@ -3,8 +3,30 @@ mod tetris;
 
 use error::Error;
 use persy::Persy;
-use rocket::{get, routes, Ignite, Rocket};
+use rocket::{
+    get,
+    http::{Cookie, CookieJar},
+    routes, Ignite, Request, Rocket,
+};
 use rocket_dyn_templates::Template;
+
+// Root page handler, returns a string with html content
+#[get("/")]
+fn index(cookie_jar: &CookieJar) -> String {
+    // Get user id from cookie
+    let user_id = if let Some(user_id) = cookie_jar
+        .get("user_id")
+        .map(|v| v.value().parse::<u32>().ok())
+        .flatten()
+    {
+        user_id
+    } else {
+        let user_id = rand::random::<u32>();
+        cookie_jar.add(Cookie::new("user_id", user_id.to_string()));
+        user_id
+    };
+    user_id.to_string()
+}
 
 // Admin page, returns a handlebars template
 #[get("/admin")]
@@ -56,6 +78,8 @@ async fn init() -> Result<Rocket<Ignite>, Error> {
     let rocket = rocket::build()
         // Attach Template::fairing() to rocket instance
         .attach(Template::fairing())
+        // Mount index route
+        .mount("/", routes![index])
         // Mount admin route
         .mount("/", routes![admin])
         // Mount index route
