@@ -5,18 +5,35 @@ use persy::Persy;
 use rocket::{get, routes, Ignite, Rocket};
 use rocket_dyn_templates::Template;
 
-// Define 'index' route
-#[get("/")]
-fn index() -> &'static str {
-    "Hello, world!"
-}
-
 // Admin page, returns a handlebars template
 #[get("/admin")]
 fn admin() -> Template {
     let context = ();
     // Render admin/index.html.hbs template
     Template::render("admin/index", &context)
+}
+
+// Serve specified static file or index.html if only path is given, set rank = 2
+#[get("/<file..>", rank = 2)]
+async fn files(file: std::path::PathBuf) -> Option<rocket::fs::NamedFile> {
+    // Split file to path and file name
+    let path = file.parent().unwrap_or(std::path::Path::new(""));
+    let file = file.file_name().unwrap_or(std::ffi::OsStr::new(""));
+
+    // Serve static content of index.html if file is empty
+    if file.is_empty() {
+        rocket::fs::NamedFile::open(
+            std::path::Path::new("static/")
+                .join(path)
+                .join("index.html"),
+        )
+        .await
+        .ok()
+    } else {
+        rocket::fs::NamedFile::open(std::path::Path::new("static/").join(path).join(file))
+            .await
+            .ok()
+    }
 }
 
 async fn init() -> Result<Rocket<Ignite>, Error> {
@@ -38,10 +55,10 @@ async fn init() -> Result<Rocket<Ignite>, Error> {
     let rocket = rocket::build()
         // Attach Template::fairing() to rocket instance
         .attach(Template::fairing())
-        // Mount index route
-        .mount("/", routes![index])
         // Mount admin route
         .mount("/", routes![admin])
+        // Mount index route
+        .mount("/", routes![files])
         .launch()
         .await?;
     Ok(rocket)
