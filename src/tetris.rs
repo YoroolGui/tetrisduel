@@ -1,20 +1,4 @@
-use rand::Rng;
-
-// Structure tetris game
-// Defines size of tetris game field, game field, current tetromino, next tetromino
-struct Tetris {
-    // Game field size
-    width: usize,
-    height: usize,
-    // Game field
-    field: Vec<Vec<CellType>>,
-    // Current tetromino
-    current: Option<Tetromino>,
-    // Next tetromino
-    next: TetrominoType,
-    // Random number generator
-    rng: rand::rngs::ThreadRng,
-}
+use rand::{rngs::ThreadRng, Rng};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum CellType {
@@ -220,7 +204,7 @@ enum TetrominoType {
 
 impl TetrominoType {
     // new method returns new tetromino type
-    pub fn new(rng: &mut impl rand::Rng) -> Self {
+    pub fn new_random(rng: &mut impl rand::Rng) -> Self {
         // Create new tetromino type
         // Create random number between 0 and 6
         let random_number = rng.gen_range(0..7);
@@ -352,6 +336,22 @@ impl Tetromino {
     }
 }
 
+struct Tetris {
+    // Game field size
+    width: usize,
+    height: usize,
+    // Game field
+    field: Vec<Vec<CellType>>,
+    // Preview field
+    preview: Vec<Vec<CellType>>,
+    // Current tetromino
+    current: Option<Tetromino>,
+    // Next tetromino
+    next: TetrominoType,
+    // Random number generator
+    rng: rand::rngs::ThreadRng,
+}
+
 impl Tetris {
     pub fn new(width: usize, height: usize) -> Self {
         // Create new tetris game
@@ -360,18 +360,43 @@ impl Tetris {
             .map(|_| (0..width).map(|_| CellType::Empty).collect())
             .collect();
 
+        // Create preview field, functional style
+        let mut preview = (0..4)
+            .map(|_| (0..4).map(|_| CellType::Empty).collect())
+            .collect();
+
         // Create random number generator
         let mut rng = rand::thread_rng();
+
+        // Set next tetromino type
+        let next = Self::create_next_tetromino_type(&mut rng, &mut preview);
 
         // Create new tetris game
         Tetris {
             width,
             height,
             field,
+            preview,
             current: None,
-            next: TetrominoType::new(&mut rng),
+            next,
             rng,
         }
+    }
+
+    // Create next tetromino type and draw it on preview field
+    fn create_next_tetromino_type(
+        rng: &mut ThreadRng,
+        preview: &mut Vec<Vec<CellType>>,
+    ) -> TetrominoType {
+        // Create next tetromino and draw it on preview field
+        // Get next tetromino type
+        let tetromino_type = TetrominoType::new_random(rng);
+        // Create new tetromino
+        let tetromino = Tetromino::new(tetromino_type, Rotation::R0, 0, 0);
+        // Draw tetromino on preview field
+        tetromino.draw(preview);
+        // Get tetromino
+        tetromino_type
     }
 
     pub fn get_field(&self) -> &Vec<Vec<CellType>> {
@@ -389,16 +414,20 @@ impl Tetris {
     // Place new tetromino on the field. Return false if it's impossible to place new tetromino
     pub fn place_new_tetromino(&mut self) -> bool {
         // Place new tetromino on the field
+
         // Create new tetromino
         let new_tetromino = Tetromino::new(self.next, Rotation::R0, self.width as isize / 2 - 2, 0);
+
         // Check if new tetromino intersects with field borders or other tetrominos
         if new_tetromino.intersects(&self.field) {
             return false;
         }
         // Set new tetromino as current
         self.current = Some(new_tetromino);
-        // Set new tetromino type as next
-        self.next = TetrominoType::new(&mut self.rng);
+
+        // Set next tetromino type and draw it on preview field
+        self.next = Self::create_next_tetromino_type(&mut self.rng, &mut self.preview);
+
         // Return true if new tetromino was placed on the field
         true
     }
