@@ -1,8 +1,8 @@
-use async_std::sync::{Arc, RwLock};
+use async_std::sync::RwLock;
 use linked_hash_map::LinkedHashMap;
 
 pub struct LRUStorage<K: Eq + std::hash::Hash + Clone, V> {
-    items: Arc<RwLock<LinkedHashMap<K, V>>>,
+    items: RwLock<LinkedHashMap<K, V>>,
     capacity: usize,
 }
 
@@ -10,7 +10,7 @@ pub struct LRUStorage<K: Eq + std::hash::Hash + Clone, V> {
 impl<K: Eq + std::hash::Hash + Clone, V> LRUStorage<K, V> {
     pub fn new(capacity: usize) -> Self {
         Self {
-            items: Arc::new(RwLock::new(LinkedHashMap::new())),
+            items: RwLock::new(LinkedHashMap::new()),
             capacity,
         }
     }
