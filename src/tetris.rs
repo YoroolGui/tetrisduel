@@ -1,5 +1,7 @@
 use std::collections::VecDeque;
 
+use rocket::serde::Serialize;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum CellType {
     Empty,
@@ -13,7 +15,48 @@ enum CellType {
     Z,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+// implement Serialize/Deserialise traits for CellType to encode/decode CellType using integer values
+impl serde::Serialize for CellType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            CellType::Empty => serializer.serialize_u8(0),
+            CellType::Blasted => serializer.serialize_u8(1),
+            CellType::I => serializer.serialize_u8(2),
+            CellType::J => serializer.serialize_u8(3),
+            CellType::L => serializer.serialize_u8(4),
+            CellType::O => serializer.serialize_u8(5),
+            CellType::S => serializer.serialize_u8(6),
+            CellType::T => serializer.serialize_u8(7),
+            CellType::Z => serializer.serialize_u8(8),
+        }
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for CellType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = u8::deserialize(deserializer)?;
+        match value {
+            0 => Ok(CellType::Empty),
+            1 => Ok(CellType::Blasted),
+            2 => Ok(CellType::I),
+            3 => Ok(CellType::J),
+            4 => Ok(CellType::L),
+            5 => Ok(CellType::O),
+            6 => Ok(CellType::S),
+            7 => Ok(CellType::T),
+            8 => Ok(CellType::Z),
+            _ => Err(serde::de::Error::custom("Invalid CellType")),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 enum Rotation {
     R0,
     R90,
@@ -55,6 +98,7 @@ impl std::ops::Add<Rotation> for Rotation {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 struct TetrominoMatrix {
     matrix: [[bool; 4]; 4],
     width: usize,
@@ -192,7 +236,7 @@ fn get_tetromino_matrix(tetromino_type: &TetrominoType) -> &TetrominoMatrix {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 enum TetrominoType {
     I,
     J,
@@ -255,6 +299,7 @@ impl TetrominoType {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 struct Tetromino {
     // Tetromino type
     tetromino_type: TetrominoType,
@@ -338,7 +383,7 @@ impl Tetromino {
 }
 
 // Enum with all possible user actions
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize)]
 pub enum Action {
     MoveLeft,
     MoveRight,
@@ -347,6 +392,8 @@ pub enum Action {
     RotateRight,
 }
 
+// Json serializable struct to send game state to client
+#[derive(Serialize)]
 pub struct Tetris {
     // Game field size
     width: usize,

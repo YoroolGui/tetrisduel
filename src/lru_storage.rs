@@ -23,32 +23,60 @@ impl<K: Eq + std::hash::Hash + Clone, V> LRUStorage<K, V> {
         items.len()
     }
 
-    // access to the item of underlying map by key with closure
-    pub fn access_with_create(
+    pub fn access<R>(&self, key: &K, access: impl FnOnce(Option<&V>) -> R) -> R {
+        let mut items = self.items.read().unwrap();
+        access(items.get(key))
+    }
+
+    pub fn access_refresh<R>(&self, key: &K, access: impl FnOnce(Option<&V>) -> R) -> R {
+        let mut items = self.items.write().unwrap();
+        // convert Option<&mut V> to Option<&V>
+        let r = items.get_refresh(key);
+        let r = r.map(|v| v as &V);
+        access(r)
+    }
+
+    pub fn access_mut<R>(&self, key: &K, access: impl FnOnce(Option<&mut V>) -> R) -> R {
+        let mut items = self.items.write().unwrap();
+        access(items.get_mut(key))
+    }
+
+    pub fn access_mut_refresh<R>(&self, key: &K, access: impl FnOnce(Option<&mut V>) -> R) -> R {
+        let mut items = self.items.write().unwrap();
+        access(items.get_refresh(key))
+    }
+
+    fn remove_lru(items: &mut LinkedHashMap<K, V>, capacity: usize) {
+        if items.len() >= capacity {
+            items.pop_front();
+        }
+    }
+
+    // access to the item of underlying map by key with closure, create if not exists
+    pub fn access_refresh_mut_with_create<R>(
         &self,
         key: &K,
         create: impl FnOnce() -> Option<V>,
-        access: impl FnOnce(&V),
-    ) {
+        access: impl FnOnce(Option<&mut V>) -> R,
+    ) -> R {
         let mut items = self.items.write().unwrap();
         if let Some(value) = items.get_refresh(key) {
-            access(value);
+            access(Some(value))
         } else {
-            if let Some(value) = create() {
-                if items.len() >= self.capacity {
-                    items.pop_front();
-                }
-                access(&value);
+            if let Some(mut value) = create() {
+                let ret = access(Some(&mut value));
+                Self::remove_lru(&mut items, self.capacity);
                 items.insert(key.clone(), value);
+                ret
+            } else {
+                access(None)
             }
         }
     }
 
     pub fn put(&mut self, key: K, value: V) {
         let mut items = self.items.write().unwrap();
-        if items.len() >= self.capacity {
-            items.pop_front();
-        }
+        Self::remove_lru(&mut items, self.capacity);
         items.insert(key, value);
     }
 }

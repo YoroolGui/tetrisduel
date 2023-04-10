@@ -8,7 +8,10 @@ use persy::Persy;
 use rocket::{
     get,
     http::{Cookie, CookieJar},
-    routes, Ignite, Rocket, State,
+    response::status,
+    routes,
+    serde::json::serde_json,
+    Ignite, Rocket, State,
 };
 use rocket_dyn_templates::Template;
 
@@ -35,10 +38,23 @@ fn user_id(cookie_jar: &CookieJar) -> u32 {
 fn index(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) -> String {
     // Access managed storage with type Tetrises
     let user_id = user_id(cookie_jar);
-    tetrises.access_with_create(&user_id, || Some(Tetris::new(10, 20)), |_| ());
-
+    tetrises.access_refresh_mut_with_create(&user_id, || Some(Tetris::new(10, 20)), |_| ());
     // let _tetris = tetrises.get_mut_or_else(&user_id, || Tetris::new(10, 20));
     tetrises.len().to_string()
+}
+
+// Returns game state as json. Returns HTTP error 404 if user is not found
+#[get("/game_state")]
+fn game_state(
+    cookie_jar: &CookieJar,
+    tetrises: &State<Tetrises>,
+) -> Result<String, status::NotFound<String>> {
+    let user_id = user_id(cookie_jar);
+    tetrises
+        .access_refresh(&user_id, |tetris| {
+            tetris.map(|tetris| serde_json::to_string(tetris).unwrap())
+        })
+        .ok_or(status::NotFound("User not found".to_string()))
 }
 
 // Admin page, returns a handlebars template
@@ -95,13 +111,10 @@ async fn init() -> Result<Rocket<Ignite>, Error> {
     let rocket = rocket::build()
         // Attach Template::fairing() to rocket instance
         .attach(Template::fairing())
-        // Mount index route
+        // Game statuses for users
         .manage(tetrises)
-        .mount("/", routes![index])
-        // Mount admin route
-        .mount("/", routes![admin])
         // Mount index route
-        .mount("/", routes![files])
+        .mount("/", routes![index, admin, files, game_state])
         .launch()
         .await?;
     Ok(rocket)
