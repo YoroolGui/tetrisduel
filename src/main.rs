@@ -5,10 +5,14 @@ mod tetris;
 use crate::{lru_storage::LRUStorage, tetris::Tetris};
 use error::Error;
 use persy::Persy;
+use rocket::tokio::time::{self, Duration};
 use rocket::{
     get,
     http::{Cookie, CookieJar},
-    response::status,
+    response::{
+        status,
+        stream::{Event, EventStream},
+    },
     routes,
     serde::json::serde_json,
     Ignite, Rocket, State,
@@ -88,6 +92,19 @@ async fn files(file: std::path::PathBuf) -> Option<rocket::fs::NamedFile> {
     }
 }
 
+// Returns game state as EventStream
+#[get("/sse")]
+fn sse(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) -> EventStream![] {
+    let user_id = user_id(cookie_jar);
+    EventStream! {
+              let mut interval = time::interval(Duration::from_secs(1));
+        loop {
+            yield Event::data("foo");
+            interval.tick().await;
+        }
+    }
+}
+
 async fn init() -> Result<Rocket<Ignite>, Error> {
     // Get executable name without extension
     let exe_name = std::env::current_exe()?;
@@ -114,7 +131,7 @@ async fn init() -> Result<Rocket<Ignite>, Error> {
         // Game statuses for users
         .manage(tetrises)
         // Mount index route
-        .mount("/", routes![index, admin, files, game_state])
+        .mount("/", routes![index, admin, files, game_state, sse])
         .launch()
         .await?;
     Ok(rocket)

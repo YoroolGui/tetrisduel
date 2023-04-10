@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Server-Sent Events Example</title>
+</head>
+
+<body>
+    <h1>Server-Sent Events Example</h1>
+    <div id="sse-container"></div>
+    <script>
+        const sse = new EventSource('/sse');
+        const container = document.getElementById('sse-container');
+
+        sse.addEventListener('message', (event) => {
+            const msg = event.data;
+            const newElement = document.createElement("p");
+            const newContent = document.createTextNode(msg);
+            newElement.appendChild(newContent);
+            container.appendChild(newElement);
+        });
+    </script>
+</body>
+
+</html>
