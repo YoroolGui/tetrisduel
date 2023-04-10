@@ -1,7 +1,5 @@
 use std::collections::VecDeque;
 
-use rand::{rngs::ThreadRng, Rng};
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum CellType {
     Empty,
@@ -207,10 +205,10 @@ enum TetrominoType {
 
 impl TetrominoType {
     // new method returns new tetromino type
-    pub fn new_random(rng: &mut impl rand::Rng) -> Self {
+    pub fn new_random() -> Self {
         // Create new tetromino type
         // Create random number between 0 and 6
-        let random_number = rng.gen_range(0..7);
+        let random_number = rand::random::<u32>() % 7;
         // Return new tetromino type
         match random_number {
             0 => TetrominoType::I,
@@ -349,7 +347,7 @@ pub enum Action {
     RotateRight,
 }
 
-struct Tetris {
+pub struct Tetris {
     // Game field size
     width: usize,
     height: usize,
@@ -365,8 +363,6 @@ struct Tetris {
     next: TetrominoType,
     // User actions queue
     actions: VecDeque<Action>,
-    // Random number generator
-    rng: rand::rngs::ThreadRng,
 }
 
 impl Tetris {
@@ -382,11 +378,8 @@ impl Tetris {
             .map(|_| (0..4).map(|_| CellType::Empty).collect())
             .collect();
 
-        // Create random number generator
-        let mut rng = rand::thread_rng();
-
         // Set next tetromino type
-        let next = Self::create_next_tetromino_type(&mut rng, &mut preview);
+        let next = Self::create_next_tetromino_type(&mut preview);
 
         // Create user actions queue
         let actions = VecDeque::new();
@@ -404,7 +397,6 @@ impl Tetris {
             current: None,
             next,
             actions,
-            rng,
         }
     }
 
@@ -420,11 +412,11 @@ impl Tetris {
         }
 
         // Do not process user actions until last blased line is removed
-        if (self.current.is_none()) {
-            if (self.remove_top_blasted_line()) {
+        if self.current.is_none() {
+            if self.remove_top_blasted_line() {
                 return;
             } else {
-                if (!self.place_next_tetromino()) {
+                if !self.place_next_tetromino() {
                     self.game_over = true;
                     return;
                 }
@@ -450,13 +442,10 @@ impl Tetris {
     }
 
     // Create next tetromino type and draw it on preview field
-    fn create_next_tetromino_type(
-        rng: &mut ThreadRng,
-        preview: &mut Vec<Vec<CellType>>,
-    ) -> TetrominoType {
+    fn create_next_tetromino_type(preview: &mut Vec<Vec<CellType>>) -> TetrominoType {
         // Create next tetromino and draw it on preview field
         // Get next tetromino type
-        let tetromino_type = TetrominoType::new_random(rng);
+        let tetromino_type = TetrominoType::new_random();
         // Create new tetromino
         let tetromino = Tetromino::new(tetromino_type, Rotation::R0, 0, 0);
         // Draw tetromino on preview field
@@ -490,7 +479,7 @@ impl Tetris {
         self.current = Some(new_tetromino);
 
         // Set next tetromino type and draw it on preview field
-        self.next = Self::create_next_tetromino_type(&mut self.rng, &mut self.preview);
+        self.next = Self::create_next_tetromino_type(&mut self.preview);
 
         // Return true if new tetromino was placed on the field
         true

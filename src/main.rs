@@ -1,4 +1,5 @@
 mod error;
+mod lru_storage;
 mod tetris;
 
 use error::Error;
@@ -9,6 +10,8 @@ use rocket::{
     routes, Ignite, Rocket,
 };
 use rocket_dyn_templates::Template;
+
+use crate::{lru_storage::LRUStorage, tetris::Tetris};
 
 // Get user id from cookie, if cookie is not set, generate new user id and set cookie
 fn user_id(cookie_jar: &CookieJar) -> u32 {
@@ -78,11 +81,16 @@ async fn init() -> Result<Rocket<Ignite>, Error> {
     println!("Database file: {}", db_name);
     let config = persy::Config::default();
     Persy::open_or_create_with(db_name, config, |_persy| Ok(()))?;
+
+    // Create storage for tetris games
+    let tetrises: LRUStorage<u32, Tetris> = LRUStorage::new(1000);
+
     // Start rocket server
     let rocket = rocket::build()
         // Attach Template::fairing() to rocket instance
         .attach(Template::fairing())
         // Mount index route
+        .manage(tetrises)
         .mount("/", routes![index])
         // Mount admin route
         .mount("/", routes![admin])
