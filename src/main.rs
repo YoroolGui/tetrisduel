@@ -2,16 +2,17 @@ mod error;
 mod lru_storage;
 mod tetris;
 
+use crate::{lru_storage::LRUStorage, tetris::Tetris};
 use error::Error;
 use persy::Persy;
 use rocket::{
     get,
     http::{Cookie, CookieJar},
-    routes, Ignite, Rocket,
+    routes, Ignite, Rocket, State,
 };
 use rocket_dyn_templates::Template;
 
-use crate::{lru_storage::LRUStorage, tetris::Tetris};
+type Tetrises = LRUStorage<u32, Tetris>;
 
 // Get user id from cookie, if cookie is not set, generate new user id and set cookie
 fn user_id(cookie_jar: &CookieJar) -> u32 {
@@ -31,8 +32,13 @@ fn user_id(cookie_jar: &CookieJar) -> u32 {
 
 // Root page handler, returns a string with html content
 #[get("/")]
-fn index(cookie_jar: &CookieJar) -> String {
-    user_id(cookie_jar).to_string()
+fn index(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) -> String {
+    // Access managed storage with type Tetrises
+    let user_id = user_id(cookie_jar);
+    tetrises.access_with_create(&user_id, || Some(Tetris::new(10, 20)), |_| ());
+
+    // let _tetris = tetrises.get_mut_or_else(&user_id, || Tetris::new(10, 20));
+    tetrises.len().to_string()
 }
 
 // Admin page, returns a handlebars template
@@ -83,7 +89,7 @@ async fn init() -> Result<Rocket<Ignite>, Error> {
     Persy::open_or_create_with(db_name, config, |_persy| Ok(()))?;
 
     // Create storage for tetris games
-    let tetrises: LRUStorage<u32, Tetris> = LRUStorage::new(1000);
+    let tetrises = Tetrises::new(1000);
 
     // Start rocket server
     let rocket = rocket::build()
