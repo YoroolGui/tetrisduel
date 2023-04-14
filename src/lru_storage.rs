@@ -17,6 +17,11 @@ impl<K: Eq + std::hash::Hash + Clone, V> LRUStorage<K, V> {
         }
     }
 
+    pub fn exists(&self, key: &K) -> bool {
+        let items = self.items.read().unwrap();
+        items.contains_key(key)
+    }
+
     // get nubmer of items in storage
     pub fn len(&self) -> usize {
         let items = self.items.read().unwrap();
@@ -74,7 +79,7 @@ impl<K: Eq + std::hash::Hash + Clone, V> LRUStorage<K, V> {
         }
     }
 
-    pub fn put(&mut self, key: K, value: V) {
+    pub fn put(&self, key: K, value: V) {
         let mut items = self.items.write().unwrap();
         Self::remove_lru(&mut items, self.capacity);
         items.insert(key, value);

@@ -14,6 +14,7 @@
         const container = document.getElementById('sse-container');
 
         sse.addEventListener('message', (event) => {
+            // console.log("FOO");
             const msg = event.data;
             const newElement = document.createElement("p");
             const newContent = document.createTextNode(msg);
