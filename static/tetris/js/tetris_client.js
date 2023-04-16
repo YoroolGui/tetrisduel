@@ -31,7 +31,7 @@ class TetrisClient {
 
     connect() {
         // Connect to server
-        this.sse = new EventSource(this.url);
+        this.sse = new EventSource(this.url + '/sse');
         this.sse.addEventListener('message', (event) => {
             var data = JSON.parse(event.data);
             this.cols = data.cols;
@@ -64,7 +64,7 @@ class TetrisClient {
     }
 
     down() {
-        console.log('down');
+        window.fetch(this.url + '/down', { method: 'POST' });
     }
 
     bindButtons(left_id, rotate_left_id, down_id, rotate_right_id, right_id) {
@@ -142,8 +142,8 @@ class TetrisClient {
     drawCell(x, y, size, cellState, offsetX, offsetY) {
         var ctx = this.ctx;
         const padding = 1;
-        let color = '#f2f2f2';
         const figureColors = new Map([
+            [TetrisClient.CellTypeEmpty, '#f2f2f2'],
             [TetrisClient.CellTypeI, '#00FFFF'],
             [TetrisClient.CellTypeJ, '#0000FF'],
             [TetrisClient.CellTypeL, '#FFA500'],
@@ -164,19 +164,28 @@ class TetrisClient {
         const rows = this.rows;
         const cols = this.cols;
         const cellSize = Math.floor(ctx.canvas.height / (rows + 1));
-        const gameWidth = cols * cellSize;
-        const offsetX = Math.floor((ctx.canvas.width - gameWidth) / 2); // Calculate horizontal offset
-        const offsetY = cellSize; // Add offset for the bottom wall
+        const internalWidth = cols * cellSize;
+        // const offsetX = Math.floor((ctx.canvas.width - gameWidth) / 2); // Calculate horizontal offset
+        // const offsetY = cellSize; // Add offset for the bottom wall
+        const fieldWidth = (cols + 2) * cellSize; // Add offset for the left and right walls
+        const fieldHeight = (rows + 1) * cellSize; // Add offset for the bottom wall
+        const offsetX = Math.floor((ctx.canvas.width - fieldWidth) / 2); // Calculate horizontal offset
+        const offsetY = 0; // Add offset for the bottom wall
+        const internalOffsetX = offsetX + cellSize; // Add offset for the left wall
+        const internalOffsetY = offsetY; // Add offset for the top wall
 
         ctx.fillStyle = '#333333';
-        ctx.fillRect(offsetX - cellSize, 0, cellSize, ctx.canvas.height); // Adjust left wall position
-        ctx.fillRect(offsetX + gameWidth, 0, cellSize, ctx.canvas.height); // Adjust right wall position
-        ctx.fillRect(offsetX, ctx.canvas.height - offsetY, gameWidth, offsetY);
+        // draw left wall
+        ctx.fillRect(offsetX, 0, cellSize, (rows + 1) * cellSize);
+        // draw right wall
+        ctx.fillRect(offsetX + internalWidth + cellSize, 0, cellSize, (rows + 1) * cellSize);
+        // draw bottom wall
+        ctx.fillRect(offsetX + cellSize, offsetY + rows * cellSize, internalWidth, cellSize);
 
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
                 const cellState = this.field[row][col];
-                this.drawCell(col, row, cellSize, cellState, offsetX, 0);
+                this.drawCell(col, row, cellSize, cellState, internalOffsetX, 0);
             }
         }
     }

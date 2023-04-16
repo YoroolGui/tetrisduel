@@ -32,7 +32,7 @@
 
         var canvas = document.getElementById("myCanvas");
         var ctx = canvas.getContext("2d");
-        var tetrisClient = new TetrisClient(canvas, "/sse");
+        var tetrisClient = new TetrisClient(canvas, "");
         tetrisClient.bindKeys();
         tetrisClient.bindButtons("left-btn", "rotate-left-btn", "down-btn", "rotate-right-btn", "right-btn");
 

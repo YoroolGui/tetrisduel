@@ -5,6 +5,7 @@ mod tetris;
 use crate::{lru_storage::LRUStorage, tetris::Tetris};
 use error::Error;
 use persy::Persy;
+use rocket::post;
 use rocket::tokio::time::{self, Duration};
 use rocket::{
     get,
@@ -18,6 +19,7 @@ use rocket::{
     Ignite, Rocket, State,
 };
 use rocket_dyn_templates::Template;
+use tetris::Action;
 
 type Tetrises = LRUStorage<u32, Tetris>;
 
@@ -151,6 +153,15 @@ fn sse<'a, 'b>(
     }
 }
 
+// When /down url is requested, move tetris figure down
+#[post("/down")]
+fn down(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) {
+    let user_id = tetris_user_id(cookie_jar, tetrises);
+    tetrises.access_refresh_mut(&user_id, |opt_tetris| {
+        opt_tetris.map(|tetris| tetris.add_action(Action::MoveDown));
+    });
+}
+
 // .ok_or(status::NotFound("User not found".to_string()));
 async fn init() -> Result<Rocket<Ignite>, Error> {
     // Get executable name without extension
@@ -178,7 +189,7 @@ async fn init() -> Result<Rocket<Ignite>, Error> {
         // Game statuses for users
         .manage(tetrises)
         // Mount index route
-        .mount("/", routes![index, admin, files, game_state, sse])
+        .mount("/", routes![index, admin, files, game_state, sse, down])
         .launch()
         .await?;
     Ok(rocket)
