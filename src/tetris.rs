@@ -1,10 +1,9 @@
-use std::collections::VecDeque;
-
 use rocket::serde::Serialize;
+use std::collections::VecDeque;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum CellType {
-    Empty,
+    Empty = 0,
     Blasted,
     I,
     J,
@@ -15,44 +14,13 @@ enum CellType {
     Z,
 }
 
-// implement Serialize/Deserialise traits for CellType to encode/decode CellType using integer values
+// implement serialize/deserialize considering that CellType implements FromPrimitive trait
 impl serde::Serialize for CellType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        match self {
-            CellType::Empty => serializer.serialize_u8(0),
-            CellType::Blasted => serializer.serialize_u8(1),
-            CellType::I => serializer.serialize_u8(2),
-            CellType::J => serializer.serialize_u8(3),
-            CellType::L => serializer.serialize_u8(4),
-            CellType::O => serializer.serialize_u8(5),
-            CellType::S => serializer.serialize_u8(6),
-            CellType::T => serializer.serialize_u8(7),
-            CellType::Z => serializer.serialize_u8(8),
-        }
-    }
-}
-
-impl<'de> serde::Deserialize<'de> for CellType {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let value = u8::deserialize(deserializer)?;
-        match value {
-            0 => Ok(CellType::Empty),
-            1 => Ok(CellType::Blasted),
-            2 => Ok(CellType::I),
-            3 => Ok(CellType::J),
-            4 => Ok(CellType::L),
-            5 => Ok(CellType::O),
-            6 => Ok(CellType::S),
-            7 => Ok(CellType::T),
-            8 => Ok(CellType::Z),
-            _ => Err(serde::de::Error::custom("Invalid CellType")),
-        }
+        serializer.serialize_u64(*self as u64)
     }
 }
 
@@ -392,12 +360,10 @@ pub enum Action {
     RotateRight,
 }
 
-// Json serializable struct to send game state to client
-#[derive(Serialize)]
 pub struct Tetris {
     // Game field size
-    width: usize,
-    height: usize,
+    cols: usize,
+    rows: usize,
     // Game over flag
     game_over: bool,
     // Game field
@@ -410,6 +376,8 @@ pub struct Tetris {
     next: TetrominoType,
     // User actions queue
     actions: VecDeque<Action>,
+    // Game score
+    score: usize,
 }
 
 impl Tetris {
@@ -434,16 +402,20 @@ impl Tetris {
         // Set game over flag
         let game_over = false;
 
+        // Score
+        let score = 0;
+
         // Create new tetris game
         Tetris {
-            width,
-            height,
+            cols: width,
+            rows: height,
             game_over,
             field,
             preview,
             current: None,
             next,
             actions,
+            score,
         }
     }
 
@@ -516,7 +488,7 @@ impl Tetris {
     // Place new tetromino on the field. Return false if it's impossible to place new tetromino
     pub fn place_next_tetromino(&mut self) -> bool {
         // Create new tetromino
-        let new_tetromino = Tetromino::new(self.next, Rotation::R0, self.width as isize / 2 - 2, 0);
+        let new_tetromino = Tetromino::new(self.next, Rotation::R0, self.cols as isize / 2 - 2, 0);
 
         // Check if new tetromino intersects with field borders or other tetrominos
         if new_tetromino.intersects(&self.field) {
@@ -600,9 +572,9 @@ impl Tetris {
         // Iterate over all lines
         // If line is full, replace it's Empty cells to Blasted cells and set return value to true
         let mut full_lines = false;
-        for y in 0..self.height {
+        for y in 0..self.rows {
             let mut full_line = true;
-            for x in 0..self.width {
+            for x in 0..self.cols {
                 if self.field[y][x] == CellType::Empty {
                     full_line = false;
                     break;
@@ -610,7 +582,7 @@ impl Tetris {
             }
             if full_line {
                 full_lines = true;
-                for x in 0..self.width {
+                for x in 0..self.cols {
                     self.field[y][x] = CellType::Blasted;
                 }
             }
@@ -624,7 +596,7 @@ impl Tetris {
     fn remove_top_blasted_line(&mut self) -> bool {
         // Find topmost blasted line
         let mut top_blasted_line = None;
-        for y in 0..self.height {
+        for y in 0..self.rows {
             if self.field[y][0] == CellType::Blasted {
                 top_blasted_line = Some(y);
                 break;
@@ -636,15 +608,41 @@ impl Tetris {
         };
         // Shift all lines above topmost blasted line down to one line
         for y in (0..top_blasted_line).rev() {
-            for x in 0..self.width {
+            for x in 0..self.cols {
                 self.field[y + 1][x] = self.field[y][x];
             }
         }
         // Fill topmost line with Empty cells
-        for x in 0..self.width {
+        for x in 0..self.cols {
             self.field[0][x] = CellType::Empty;
         }
         // Return true if there were blasted lines
         true
     }
+
+    // get game state for serialization
+    pub fn get_game_state(&self) -> TetrisGameState {
+        let mut field = self.field.clone();
+        // draw current tetromino on the field
+        if let Some(current) = &self.current {
+            current.draw(&mut field);
+        }
+        let preview = self.preview.clone();
+        TetrisGameState {
+            cols: self.cols,
+            rows: self.rows,
+            field,
+            preview,
+            game_over: self.game_over,
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct TetrisGameState {
+    cols: usize,
+    rows: usize,
+    field: Vec<Vec<CellType>>,
+    preview: Vec<Vec<CellType>>,
+    game_over: bool,
 }

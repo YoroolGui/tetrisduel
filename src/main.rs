@@ -86,7 +86,8 @@ fn game_state(
     let user_id = tetris_user_id(cookie_jar, tetrises);
     tetrises
         .access_refresh(&user_id, |tetris| {
-            tetris.map(|tetris| serde_json::to_string(tetris).unwrap())
+            let tetris = tetris.map(|tetris| tetris.get_game_state());
+            tetris.map(|tetris| serde_json::to_string(&tetris).unwrap())
         })
         .ok_or(status::NotFound("User not found".to_string()))
 }
@@ -132,7 +133,9 @@ fn sse<'a, 'b>(
 
     let json_field = tetrises
         .access_refresh(&user_id, |tetris| {
-            tetris.map(|tetris| serde_json::to_string(tetris).unwrap())
+            // use get_game_state method to get game state as json
+            let tetris = tetris.map(|tetris| tetris.get_game_state());
+            tetris.map(|tetris| serde_json::to_string(&tetris).unwrap())
         })
         .ok_or(status::NotFound("User not found".to_string()));
 
@@ -141,7 +144,8 @@ fn sse<'a, 'b>(
         loop {
             if let Some(json_field) = tetrises.inner()
                 .access_refresh(&user_id, |tetris| {
-                    tetris.map(|tetris| serde_json::to_string(tetris).unwrap())
+                    let tetris = tetris.map(|tetris| tetris.get_game_state());
+                    tetris.map(|tetris| serde_json::to_string(&tetris).unwrap())
                 }) {
                     yield Event::data(json_field);
                     interval.tick().await;
