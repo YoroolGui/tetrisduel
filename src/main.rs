@@ -130,24 +130,18 @@ fn sse<'a, 'b>(
     tetrises: &'b State<Tetrises>,
 ) -> EventStream![Event + 'b] {
     let user_id = tetris_user_id(cookie_jar, tetrises);
-
-    let json_field = tetrises
-        .access_refresh(&user_id, |tetris| {
-            // use get_game_state method to get game state as json
-            let tetris = tetris.map(|tetris| tetris.get_game_state());
-            tetris.map(|tetris| serde_json::to_string(&tetris).unwrap())
-        })
-        .ok_or(status::NotFound("User not found".to_string()));
-
     EventStream! {
         let mut interval = time::interval(Duration::from_millis(100));
         loop {
-            if let Some(json_field) = tetrises.inner()
-                .access_refresh(&user_id, |tetris| {
-                    let tetris = tetris.map(|tetris| tetris.get_game_state());
-                    tetris.map(|tetris| serde_json::to_string(&tetris).unwrap())
+            if let Some(json) = tetrises.inner()
+                .access_refresh_mut(&user_id, |opt_tetris| {
+                    let opt_json = opt_tetris.map(|tetris| {
+                        tetris.step();
+                        tetris.get_game_state()
+                    });
+                    opt_json.map(|json| serde_json::to_string(&json).unwrap())
                 }) {
-                    yield Event::data(json_field);
+                    yield Event::data(json);
                     interval.tick().await;
             } else {
                 // End stream

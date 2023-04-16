@@ -280,11 +280,11 @@ struct Tetromino {
 
 impl Tetromino {
     // new method accepts TetrominoType and returns new tetromino
-    pub fn new(tetrominoType: TetrominoType, rotation: Rotation, x: isize, y: isize) -> Self {
+    pub fn new(tetromino_type: TetrominoType, rotation: Rotation, x: isize, y: isize) -> Self {
         // Create new tetromino
         Tetromino {
-            tetromino_type: tetrominoType,
-            rotation: rotation,
+            tetromino_type,
+            rotation,
             x: x,
             y: y,
         }

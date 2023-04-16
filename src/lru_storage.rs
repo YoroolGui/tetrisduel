@@ -46,9 +46,10 @@ impl<K: Eq + std::hash::Hash + Clone, V> LRUStorage<K, V> {
         access(items.get_mut(key))
     }
 
-    pub fn access_mut_refresh<R>(&self, key: &K, access: impl FnOnce(Option<&mut V>) -> R) -> R {
+    pub fn access_refresh_mut<R>(&self, key: &K, access: impl FnOnce(Option<&mut V>) -> R) -> R {
         let mut items = self.items.write().unwrap();
-        access(items.get_refresh(key))
+        let r = items.get_refresh(key);
+        access(r)
     }
 
     fn remove_lru(items: &mut LinkedHashMap<K, V>, capacity: usize) {
