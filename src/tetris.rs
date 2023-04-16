@@ -358,6 +358,7 @@ pub enum Action {
     MoveDown,
     RotateLeft,
     RotateRight,
+    Drop,
 }
 
 pub struct Tetris {
@@ -376,6 +377,8 @@ pub struct Tetris {
     next: TetrominoType,
     // User actions queue
     actions: VecDeque<Action>,
+    // Drop state
+    drop: bool,
     // Game score
     score: usize,
 }
@@ -415,6 +418,7 @@ impl Tetris {
             current: None,
             next,
             actions,
+            drop: false,
             score,
         }
     }
@@ -442,6 +446,10 @@ impl Tetris {
             }
         }
 
+        if self.drop {
+            self.actions.push_back(Action::MoveDown);
+        }
+
         let Some(action) = self.actions.pop_front() else {
             return;
         };
@@ -451,6 +459,7 @@ impl Tetris {
             Action::MoveDown => self.move_down(),
             Action::RotateLeft => self.rotate_left(),
             Action::RotateRight => self.rotate_right(),
+            Action::Drop => self.drop(),
         };
         // Move down is special case. If it fails, fix current tetromino and blast full lines
         if !succeed && action == Action::MoveDown {
@@ -499,6 +508,9 @@ impl Tetris {
 
         // Set next tetromino type and draw it on preview field
         self.next = Self::create_next_tetromino_type(&mut self.preview);
+
+        // Clear drop flag
+        self.drop = false;
 
         // Return true if new tetromino was placed on the field
         true
@@ -555,6 +567,13 @@ impl Tetris {
     pub fn rotate_right(&mut self) -> bool {
         // Rotate current tetromino right, if it's possible
         self.change_current_tetromino(0, 0, Rotation::R90)
+    }
+
+    // Set drop flag
+    pub fn drop(&mut self) -> bool {
+        // Set drop flag
+        self.drop = true;
+        true
     }
 
     // Draw current tetromino on the field

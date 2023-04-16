@@ -1,7 +1,5 @@
-use std::sync::{Arc, RwLock};
-
 use linked_hash_map::LinkedHashMap;
-use rocket::serde::json::serde_json::map::Iter;
+use std::sync::{Arc, RwLock};
 
 pub struct LRUStorage<K: Eq + std::hash::Hash + Clone, V> {
     items: Arc<RwLock<LinkedHashMap<K, V>>>,
@@ -29,7 +27,7 @@ impl<K: Eq + std::hash::Hash + Clone, V> LRUStorage<K, V> {
     }
 
     pub fn access<R>(&self, key: &K, access: impl FnOnce(Option<&V>) -> R) -> R {
-        let mut items = self.items.read().unwrap();
+        let items = self.items.read().unwrap();
         access(items.get(key))
     }
 

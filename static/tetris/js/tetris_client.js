@@ -43,28 +43,28 @@ class TetrisClient {
     }
 
     // Commands to send to server (to be implemented later)
+    down() {
+        window.fetch(this.url + '/down', { method: 'POST' });
+    }
+
     moveLeft() {
-        console.log('moveLeft');
+        window.fetch(this.url + '/left', { method: 'POST' });
     }
 
     moveRight() {
-        console.log('moveRight');
+        window.fetch(this.url + '/right', { method: 'POST' });
     }
 
     rotateLeft() {
-        console.log('rotateLeft');
+        window.fetch(this.url + '/rotate_left', { method: 'POST' });
     }
 
     rotateRight() {
-        console.log('rotateRight');
+        window.fetch(this.url + '/rotate_right', { method: 'POST' });
     }
 
     drop() {
-        console.log('drop');
-    }
-
-    down() {
-        window.fetch(this.url + '/down', { method: 'POST' });
+        window.fetch(this.url + '/drop', { method: 'POST' });
     }
 
     bindButtons(left_id, rotate_left_id, down_id, rotate_right_id, right_id) {
@@ -156,7 +156,7 @@ class TetrisClient {
             ctx.fillStyle = figureColors.get(cellState);
             ctx.fillRect(x * size + padding + offsetX, y * size + padding + offsetY, size - 2 * padding, size - 2 * padding);
         } else if (cellState === TetrisClient.CellTypeBlasted) {
-            drawExplosion(ctx, x * size + offsetX, y * size + offsetY, size, size);
+            this.drawExplosion(ctx, x * size + offsetX, y * size + offsetY, size, size);
         }
     }
 

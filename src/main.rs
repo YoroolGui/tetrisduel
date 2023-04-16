@@ -1,6 +1,7 @@
 mod error;
 mod lru_storage;
 mod tetris;
+mod event_regulator;
 
 use crate::{lru_storage::LRUStorage, tetris::Tetris};
 use error::Error;
@@ -162,6 +163,51 @@ fn down(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) {
     });
 }
 
+// When /left url is requested, move tetris figure left
+#[post("/left")]
+fn left(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) {
+    let user_id = tetris_user_id(cookie_jar, tetrises);
+    tetrises.access_refresh_mut(&user_id, |opt_tetris| {
+        opt_tetris.map(|tetris| tetris.add_action(Action::MoveLeft));
+    });
+}
+
+// When /right url is requested, move tetris figure right
+#[post("/right")]
+fn right(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) {
+    let user_id = tetris_user_id(cookie_jar, tetrises);
+    tetrises.access_refresh_mut(&user_id, |opt_tetris| {
+        opt_tetris.map(|tetris| tetris.add_action(Action::MoveRight));
+    });
+}
+
+// When /rotate_right url is requested, rotate tetris figure right
+#[post("/rotate_right")]
+fn rotate_right(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) {
+    let user_id = tetris_user_id(cookie_jar, tetrises);
+    tetrises.access_refresh_mut(&user_id, |opt_tetris| {
+        opt_tetris.map(|tetris| tetris.add_action(Action::RotateRight));
+    });
+}
+
+// When /rotate_left url is requested, rotate tetris figure left
+#[post("/rotate_left")]
+fn rotate_left(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) {
+    let user_id = tetris_user_id(cookie_jar, tetrises);
+    tetrises.access_refresh_mut(&user_id, |opt_tetris| {
+        opt_tetris.map(|tetris| tetris.add_action(Action::RotateLeft));
+    });
+}
+
+// When /drop url is requested, drop tetris figure
+#[post("/drop")]
+fn drop(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) {
+    let user_id = tetris_user_id(cookie_jar, tetrises);
+    tetrises.access_refresh_mut(&user_id, |opt_tetris| {
+        opt_tetris.map(|tetris| tetris.add_action(Action::Drop));
+    });
+}
+
 // .ok_or(status::NotFound("User not found".to_string()));
 async fn init() -> Result<Rocket<Ignite>, Error> {
     // Get executable name without extension
@@ -189,7 +235,11 @@ async fn init() -> Result<Rocket<Ignite>, Error> {
         // Game statuses for users
         .manage(tetrises)
         // Mount index route
-        .mount("/", routes![index, admin, files, game_state, sse, down])
+        .mount("/", routes![index, admin, files, game_state])
+        .mount(
+            "/",
+            routes![sse, down, left, right, rotate_right, rotate_left, drop],
+        )
         .launch()
         .await?;
     Ok(rocket)
