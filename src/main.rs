@@ -1,7 +1,7 @@
 mod error;
+mod event_regulator;
 mod lru_storage;
 mod tetris;
-mod event_regulator;
 
 use crate::{lru_storage::LRUStorage, tetris::Tetris};
 use error::Error;
@@ -134,7 +134,7 @@ fn sse<'a, 'b>(
 ) -> EventStream![Event + 'b] {
     let user_id = tetris_user_id(cookie_jar, tetrises);
     EventStream! {
-        let mut interval = time::interval(Duration::from_millis(100));
+        let mut interval = time::interval(Duration::from_millis(10));
         loop {
             if let Some(json) = tetrises.inner()
                 .access_refresh_mut(&user_id, |opt_tetris| {

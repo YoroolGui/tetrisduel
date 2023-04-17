@@ -1,3 +1,4 @@
+use crate::event_regulator::EventRegulator;
 use rocket::serde::Serialize;
 use std::collections::VecDeque;
 
@@ -379,6 +380,14 @@ pub struct Tetris {
     actions: VecDeque<Action>,
     // Drop state
     drop: bool,
+    // Game speed
+    game_speed: EventRegulator,
+    // Drop speed
+    drop_speed: EventRegulator,
+    // Blasting speed
+    line_remove_speed: EventRegulator,
+    // Delay before line shifting
+    line_remove_delay: Option<usize>,
     // Game score
     score: usize,
 }
@@ -419,6 +428,10 @@ impl Tetris {
             next,
             actions,
             drop: false,
+            game_speed: EventRegulator::new(1, 100),
+            drop_speed: EventRegulator::new(1, 10),
+            line_remove_speed: EventRegulator::new(3, 10),
+            line_remove_delay: None,
             score,
         }
     }
@@ -434,20 +447,35 @@ impl Tetris {
             return;
         }
 
-        // Do not process user actions until last blased line is removed
-        if self.current.is_none() {
-            if self.remove_top_blasted_line() {
+        if let Some(ref mut delay) = self.line_remove_delay {
+            if *delay > 0 {
+                *delay -= 1;
                 return;
             } else {
-                if !self.place_next_tetromino() {
-                    self.game_over = true;
+                self.line_remove_delay = None;
+            }
+        }
+        for _ in 0..self.line_remove_speed.step() {
+            if self.current.is_none() {
+                if self.remove_top_blasted_line() {
                     return;
+                } else {
+                    if !self.place_next_tetromino() {
+                        self.game_over = true;
+                        return;
+                    }
                 }
             }
         }
 
         if self.drop {
-            self.actions.push_back(Action::MoveDown);
+            for _ in 0..self.drop_speed.step() {
+                self.actions.push_back(Action::MoveDown);
+            }
+        } else {
+            for _ in 0..self.game_speed.step() {
+                self.actions.push_back(Action::MoveDown);
+            }
         }
 
         let Some(action) = self.actions.pop_front() else {
@@ -466,6 +494,7 @@ impl Tetris {
             self.fix_current_figure();
             self.blast_full_lines();
             self.actions.clear();
+            self.line_remove_delay = Some(10); // Wait 10 ticks before placing next tetromino to show blast animation
         }
     }
 

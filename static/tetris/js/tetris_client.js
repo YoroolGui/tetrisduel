@@ -117,6 +117,8 @@ class TetrisClient {
 
     drawExplosion(x, y, h, w) {
         var ctx = self.ctx;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x, y, w, h);
         // Draw explosion
         ctx.fillStyle = '#ff9900';
         ctx.beginPath();
@@ -156,7 +158,7 @@ class TetrisClient {
             ctx.fillStyle = figureColors.get(cellState);
             ctx.fillRect(x * size + padding + offsetX, y * size + padding + offsetY, size - 2 * padding, size - 2 * padding);
         } else if (cellState === TetrisClient.CellTypeBlasted) {
-            this.drawExplosion(ctx, x * size + offsetX, y * size + offsetY, size, size);
+            this.drawExplosion(x * size + offsetX, y * size + offsetY, size, size);
         }
     }
 
