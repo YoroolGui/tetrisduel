@@ -25,6 +25,21 @@ impl serde::Serialize for CellType {
     }
 }
 
+impl CellType {
+    pub fn new_random() -> CellType {
+        match rand::random::<u8>() % 7 {
+            0 => CellType::I,
+            1 => CellType::J,
+            2 => CellType::L,
+            3 => CellType::O,
+            4 => CellType::S,
+            5 => CellType::T,
+            6 => CellType::Z,
+            _ => unreachable!(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 enum Rotation {
     R0,
@@ -360,6 +375,18 @@ pub enum Action {
     RotateLeft,
     RotateRight,
     Drop,
+    BottomRefill,
+}
+
+pub enum StepResult {
+    // Nothing happened
+    None,
+    // Action was performed
+    ActionPerformed(Action, bool),
+    // Line removed
+    LineRemoved,
+    // Game over
+    GameOver,
 }
 
 pub struct Tetris {
@@ -442,15 +469,15 @@ impl Tetris {
     }
 
     // Process single user action
-    pub fn step(&mut self) {
+    pub fn step(&mut self) -> StepResult {
         if self.game_over {
-            return;
+            return StepResult::GameOver;
         }
 
         if let Some(ref mut delay) = self.line_remove_delay {
             if *delay > 0 {
                 *delay -= 1;
-                return;
+                return StepResult::None;
             } else {
                 self.line_remove_delay = None;
             }
@@ -458,11 +485,11 @@ impl Tetris {
         for _ in 0..self.line_remove_speed.step() {
             if self.current.is_none() {
                 if self.remove_top_blasted_line() {
-                    return;
+                    return StepResult::LineRemoved;
                 } else {
                     if !self.place_next_tetromino() {
                         self.game_over = true;
-                        return;
+                        return StepResult::GameOver;
                     }
                 }
             }
@@ -479,7 +506,7 @@ impl Tetris {
         }
 
         let Some(action) = self.actions.pop_front() else {
-            return;
+            return StepResult::None;
         };
         let succeed = match action {
             Action::MoveLeft => self.move_left(),
@@ -488,6 +515,7 @@ impl Tetris {
             Action::RotateLeft => self.rotate_left(),
             Action::RotateRight => self.rotate_right(),
             Action::Drop => self.drop(),
+            Action::BottomRefill => self.bottom_refill(),
         };
         // Move down is special case. If it fails, fix current tetromino and blast full lines
         if !succeed && action == Action::MoveDown {
@@ -496,6 +524,7 @@ impl Tetris {
             self.actions.clear();
             self.line_remove_delay = Some(10); // Wait 10 ticks before placing next tetromino to show blast animation
         }
+        return StepResult::ActionPerformed(action, succeed);
     }
 
     // Create next tetromino type and draw it on preview field
@@ -605,6 +634,26 @@ impl Tetris {
         true
     }
 
+    // Push all lines up and fill bottom line with random cells with probability of filled cell = 0.5
+    pub fn bottom_refill(&mut self) -> bool {
+        // Push all lines up
+        for y in 1..self.rows {
+            for x in 0..self.cols {
+                self.field[y - 1][x] = self.field[y][x];
+            }
+        }
+        // Fill bottom line with random cells with probability of filled cell = 0.3
+        for x in 0..self.cols {
+            let cell_type = if rand::random::<f32>() < 0.5 {
+                CellType::new_random()
+            } else {
+                CellType::Empty
+            };
+            self.field[self.rows - 1][x] = cell_type;
+        }
+        true
+    }
+
     // Draw current tetromino on the field
     pub fn fix_current_figure(&mut self) {
         // Draw current tetromino on the field
@@ -683,6 +732,10 @@ impl Tetris {
             preview,
             game_over: self.game_over,
         }
+    }
+
+    pub fn is_game_over(&self) -> bool {
+        self.game_over
     }
 }
 

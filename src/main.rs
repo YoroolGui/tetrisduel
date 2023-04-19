@@ -2,6 +2,7 @@ mod error;
 mod event_regulator;
 mod lru_storage;
 mod tetris;
+mod tetris_pair_match;
 
 use crate::{lru_storage::LRUStorage, tetris::Tetris};
 use error::Error;
@@ -208,6 +209,14 @@ fn drop(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) {
     });
 }
 
+#[post("/bottom_refill")]
+fn bottom_refill(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) {
+    let user_id = tetris_user_id(cookie_jar, tetrises);
+    tetrises.access_refresh_mut(&user_id, |opt_tetris| {
+        opt_tetris.map(|tetris| tetris.add_action(Action::BottomRefill));
+    });
+}
+
 // .ok_or(status::NotFound("User not found".to_string()));
 async fn init() -> Result<Rocket<Ignite>, Error> {
     // Get executable name without extension
@@ -238,7 +247,16 @@ async fn init() -> Result<Rocket<Ignite>, Error> {
         .mount("/", routes![index, admin, files, game_state])
         .mount(
             "/",
-            routes![sse, down, left, right, rotate_right, rotate_left, drop],
+            routes![
+                sse,
+                down,
+                left,
+                right,
+                rotate_right,
+                rotate_left,
+                drop,
+                bottom_refill
+            ],
         )
         .launch()
         .await?;

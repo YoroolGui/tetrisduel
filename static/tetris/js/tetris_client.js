@@ -67,6 +67,10 @@ class TetrisClient {
         window.fetch(this.url + '/drop', { method: 'POST' });
     }
 
+    bottom_refill() {
+        window.fetch(this.url + '/bottom_refill', { method: 'POST' });
+    }
+
     bindButtons(left_id, rotate_left_id, down_id, rotate_right_id, right_id) {
         var self = this;
         document.getElementById(left_id).onclick = function () {
@@ -110,6 +114,9 @@ class TetrisClient {
                     break;
                 case " ":
                     self.drop();
+                    break;
+                case "Enter":
+                    self.bottom_refill();
                     break;
             }
         }
