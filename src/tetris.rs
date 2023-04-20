@@ -378,6 +378,7 @@ pub enum Action {
     BottomRefill,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize)]
 pub enum StepResult {
     // Nothing happened
     None,

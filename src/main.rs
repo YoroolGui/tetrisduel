@@ -2,7 +2,7 @@ mod error;
 mod event_regulator;
 mod lru_storage;
 mod tetris;
-mod tetris_pair_match;
+mod tetris_pair;
 
 use crate::{lru_storage::LRUStorage, tetris::Tetris};
 use error::Error;
