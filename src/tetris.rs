@@ -420,6 +420,12 @@ pub struct Tetris {
     score: usize,
 }
 
+impl Default for Tetris {
+    fn default() -> Self {
+        Tetris::new(10, 20)
+    }
+}
+
 impl Tetris {
     pub fn new(width: usize, height: usize) -> Self {
         // Create new tetris game

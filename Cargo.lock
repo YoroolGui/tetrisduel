@@ -513,7 +513,6 @@ dependencies = [
 name = "gameserver"
 version = "0.1.0"
 dependencies = [
- "linked-hash-map",
  "persy",
  "rand",
  "rocket",

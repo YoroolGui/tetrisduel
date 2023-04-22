@@ -1,18 +1,16 @@
-use crate::tetris::{Action, StepResult, Tetris, TetrisGameState};
+use crate::{
+    matches::PlayerSide,
+    tetris::{Action, StepResult, Tetris, TetrisGameState},
+};
+use serde::Serialize;
 
-// This class allows 2 users to play tetris against each other
-// It contains two tetris games and accepts commands from both users, each for it's own game
-// When one gamer fills a line, the other gamer gets a randomly filled line from bottom of the field
-pub enum Player {
-    A,
-    B,
-}
-
+#[derive(Serialize)]
 pub struct TetrisPairState {
     pub tetris_a: TetrisGameState,
     pub tetris_b: TetrisGameState,
 }
 
+#[derive(Default)]
 pub struct TetrisPair {
     tetris_a: Tetris,
     tetris_b: Tetris,
@@ -32,10 +30,10 @@ impl TetrisPair {
         }
     }
 
-    pub fn step(&mut self, player: Player) {
+    pub fn step_player(&mut self, player: PlayerSide) {
         match player {
-            Player::A => self.step_a = true,
-            Player::B => self.step_b = true,
+            PlayerSide::A => self.step_a = true,
+            PlayerSide::B => self.step_b = true,
         }
         if self.step_a && self.step_b {
             self.step_a = false;
@@ -51,17 +49,17 @@ impl TetrisPair {
         }
     }
 
-    pub fn get_game_state(&self, player: Player) -> TetrisGameState {
+    pub fn get_player_game_state(&self, player: PlayerSide) -> TetrisGameState {
         match player {
-            Player::A => self.tetris_a.get_game_state(),
-            Player::B => self.tetris_b.get_game_state(),
+            PlayerSide::A => self.tetris_a.get_game_state(),
+            PlayerSide::B => self.tetris_b.get_game_state(),
         }
     }
 
-    pub fn add_action(&mut self, player: Player, action: Action) {
+    pub fn add_player_action(&mut self, player: PlayerSide, action: Action) {
         match player {
-            Player::A => self.tetris_a.add_action(action),
-            Player::B => self.tetris_b.add_action(action),
+            PlayerSide::A => self.tetris_a.add_action(action),
+            PlayerSide::B => self.tetris_b.add_action(action),
         }
     }
 
@@ -69,7 +67,7 @@ impl TetrisPair {
         self.tetris_a.is_game_over() || self.tetris_b.is_game_over()
     }
 
-    pub fn get_state(&self) -> TetrisPairState {
+    pub fn get_game_state(&self) -> TetrisPairState {
         TetrisPairState {
             tetris_a: self.tetris_a.get_game_state(),
             tetris_b: self.tetris_b.get_game_state(),

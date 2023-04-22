@@ -6,8 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# linked-hash-map for lru game state storage
-linked-hash-map = "0.5.6"
 # rocket library dependency
 rocket = { version = "0.5.0-rc.3", features = ["tls", "json"] }
 # rand library dependency

@@ -1,12 +1,13 @@
 mod error;
 mod event_regulator;
-mod lru_storage;
-mod match_finder;
+mod matches;
 mod tetris;
 mod tetris_pair;
 
-use crate::{lru_storage::LRUStorage, tetris::Tetris};
+use std::sync::{Arc, RwLock};
+
 use error::Error;
+use matches::{Matches, PlayerStatus};
 use persy::Persy;
 use rocket::post;
 use rocket::tokio::time::{self, Duration};
@@ -23,11 +24,44 @@ use rocket::{
 };
 use rocket_dyn_templates::Template;
 use tetris::Action;
+use tetris_pair::{TetrisPair, TetrisPairState};
 
-type Tetrises = LRUStorage<u32, Tetris>;
+struct TetrisMatches(Arc<RwLock<Matches<u32, TetrisPair>>>);
+
+impl TetrisMatches {
+    fn new() -> Self {
+        TetrisMatches(Arc::new(RwLock::new(Matches::new())))
+    }
+    fn get_free_user_id(&self) -> u32 {
+        let mut user_id = rand::random::<u32>();
+        let matches = self.0.read().unwrap();
+        while matches.get_player_status(&user_id) != PlayerStatus::NotFound {
+            user_id = rand::random::<u32>();
+        }
+        user_id
+    }
+    fn game_state(&self, user_id: u32) -> Option<TetrisPairState> {
+        let matches = self.0.read().unwrap();
+        matches
+            .get_match_for_player(&user_id)
+            .and_then(|(_, tetris_match)| Some(tetris_match.field.get_game_state()))
+    }
+    fn add_action(&self, user_id: u32, action: Action) {
+        let mut matches = self.0.write().unwrap();
+        if let Some((_, tetris_match)) = matches.get_mut_match_for_player(&user_id) {
+            if let Some(player_side) = tetris_match.get_player_side(&user_id) {
+                tetris_match.field.add_player_action(player_side, action);
+            }
+        }
+    }
+    fn find_match(&self, user_id: u32) -> bool {
+        let mut matches = self.0.write().unwrap();
+        matches.find_match(&user_id)
+    }
+}
 
 // Get user id from cookie, if cookie is not set or user id is not valid, create new user id and set cookie
-fn user_id(
+fn get_or_create_user_id(
     cookie_jar: &CookieJar,
     validate: impl FnOnce(u32) -> bool,
     create: impl FnOnce() -> u32,
@@ -44,57 +78,43 @@ fn user_id(
         })
 }
 
-// Validate user in Tetrises: return true if user exists
-fn validate_tetris_user(tetrises: &Tetrises, user_id: u32) -> bool {
-    tetrises.exists(&user_id)
-}
-
-// Create new user id in Tetrises
-fn create_tetris_user(tetrises: &Tetrises) -> u32 {
-    let mut user_id = rand::random::<u32>();
-    while tetrises.exists(&user_id) {
-        user_id = rand::random::<u32>();
-    }
-    tetrises.put(user_id, Tetris::new(10, 20));
-    user_id
-}
-
-// Get user id by CookieJa and Tetris storage
-fn tetris_user_id(cookie_jar: &CookieJar, tetrises: &Tetrises) -> u32 {
-    user_id(
+// Get user id by CookieJar and Users storage
+fn user_id(cookie_jar: &CookieJar, tetris_matches: &TetrisMatches) -> u32 {
+    get_or_create_user_id(
         cookie_jar,
-        |id| validate_tetris_user(tetrises, id),
-        || create_tetris_user(tetrises),
+        |_| true, // TODO: check for impersonation
+        || tetris_matches.get_free_user_id(),
     )
 }
 
 // Root page handler, returns a string with html content
 #[get("/")]
-fn index(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) -> String {
+fn index(cookie_jar: &CookieJar, tetris_matches: &State<TetrisMatches>) -> String {
     // Access managed storage with type Tetrises
-    let user_id = tetris_user_id(cookie_jar, tetrises);
+    let user_id = user_id(cookie_jar, tetris_matches);
     // tetrises.access_refresh_mut_with_create(&user_id, || Some(Tetris::new(10, 20)), |_| ());
     // let _tetris = tetrises.get_mut_or_else(&user_id, || Tetris::new(10, 20));
-    vec![user_id as usize, tetrises.len()]
-        .into_iter()
-        .map(|v| v.to_string())
-        .collect::<Vec<_>>()
-        .join(" ")
+    // vec![user_id as usize, users.len()]
+    //     .into_iter()
+    //     .map(|v| v.to_string())
+    //     .collect::<Vec<_>>()
+    //     .join(" ")
+    user_id.to_string()
 }
 
 // Returns game state as json. Returns HTTP error 404 if user is not found
 #[get("/game_state")]
 fn game_state(
     cookie_jar: &CookieJar,
-    tetrises: &State<Tetrises>,
+    matches: &State<TetrisMatches>,
 ) -> Result<String, status::NotFound<String>> {
-    let user_id = tetris_user_id(cookie_jar, tetrises);
-    tetrises
-        .access_refresh(&user_id, |tetris| {
-            let tetris = tetris.map(|tetris| tetris.get_game_state());
-            tetris.map(|tetris| serde_json::to_string(&tetris).unwrap())
-        })
-        .ok_or(status::NotFound("User not found".to_string()))
+    let user_id = user_id(cookie_jar, matches);
+    let game_state = matches.game_state(user_id);
+    if let Some(game_state) = game_state {
+        Ok(serde_json::to_string(&game_state).unwrap())
+    } else {
+        Err(status::NotFound("Game not found".to_string()))
+    }
 }
 
 // Admin page, returns a handlebars template
@@ -132,25 +152,22 @@ async fn files(file: std::path::PathBuf) -> Option<rocket::fs::NamedFile> {
 #[get("/sse")]
 fn sse<'a, 'b>(
     cookie_jar: &'a CookieJar,
-    tetrises: &'b State<Tetrises>,
+    matches: &'b State<TetrisMatches>,
 ) -> EventStream![Event + 'b] {
-    let user_id = tetris_user_id(cookie_jar, tetrises);
+    let user_id = user_id(cookie_jar, matches);
     EventStream! {
         let mut interval = time::interval(Duration::from_millis(10));
         loop {
-            if let Some(json) = tetrises.inner()
-                .access_refresh_mut(&user_id, |opt_tetris| {
-                    let opt_json = opt_tetris.map(|tetris| {
-                        tetris.step();
-                        tetris.get_game_state()
-                    });
-                    opt_json.map(|json| serde_json::to_string(&json).unwrap())
-                }) {
-                    yield Event::data(json);
+            if matches.find_match(user_id) {
+                if let Some(game_state) = matches.game_state(user_id) {
+                    // Send game state as json
+                    yield Event::data(serde_json::to_string(&game_state).unwrap());
+                    // Wait for next game tick
                     interval.tick().await;
+                }
             } else {
-                // End stream
-                break;
+                time::sleep(Duration::from_millis(1000)).await;
+                interval = time::interval(Duration::from_millis(10));
             }
         }
     }
@@ -158,64 +175,50 @@ fn sse<'a, 'b>(
 
 // When /down url is requested, move tetris figure down
 #[post("/down")]
-fn down(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) {
-    let user_id = tetris_user_id(cookie_jar, tetrises);
-    tetrises.access_refresh_mut(&user_id, |opt_tetris| {
-        opt_tetris.map(|tetris| tetris.add_action(Action::MoveDown));
-    });
+fn down(cookie_jar: &CookieJar, matches: &State<TetrisMatches>) {
+    let user_id = user_id(cookie_jar, matches);
+    matches.add_action(user_id, Action::MoveDown);
 }
 
 // When /left url is requested, move tetris figure left
 #[post("/left")]
-fn left(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) {
-    let user_id = tetris_user_id(cookie_jar, tetrises);
-    tetrises.access_refresh_mut(&user_id, |opt_tetris| {
-        opt_tetris.map(|tetris| tetris.add_action(Action::MoveLeft));
-    });
+fn left(cookie_jar: &CookieJar, matches: &State<TetrisMatches>) {
+    let user_id = user_id(cookie_jar, matches);
+    matches.add_action(user_id, Action::MoveLeft);
 }
 
 // When /right url is requested, move tetris figure right
 #[post("/right")]
-fn right(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) {
-    let user_id = tetris_user_id(cookie_jar, tetrises);
-    tetrises.access_refresh_mut(&user_id, |opt_tetris| {
-        opt_tetris.map(|tetris| tetris.add_action(Action::MoveRight));
-    });
+fn right(cookie_jar: &CookieJar, matches: &State<TetrisMatches>) {
+    let user_id = user_id(cookie_jar, matches);
+    matches.add_action(user_id, Action::MoveRight);
 }
 
 // When /rotate_right url is requested, rotate tetris figure right
 #[post("/rotate_right")]
-fn rotate_right(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) {
-    let user_id = tetris_user_id(cookie_jar, tetrises);
-    tetrises.access_refresh_mut(&user_id, |opt_tetris| {
-        opt_tetris.map(|tetris| tetris.add_action(Action::RotateRight));
-    });
+fn rotate_right(cookie_jar: &CookieJar, matches: &State<TetrisMatches>) {
+    let user_id = user_id(cookie_jar, matches);
+    matches.add_action(user_id, Action::RotateRight);
 }
 
 // When /rotate_left url is requested, rotate tetris figure left
 #[post("/rotate_left")]
-fn rotate_left(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) {
-    let user_id = tetris_user_id(cookie_jar, tetrises);
-    tetrises.access_refresh_mut(&user_id, |opt_tetris| {
-        opt_tetris.map(|tetris| tetris.add_action(Action::RotateLeft));
-    });
+fn rotate_left(cookie_jar: &CookieJar, matches: &State<TetrisMatches>) {
+    let user_id = user_id(cookie_jar, matches);
+    matches.add_action(user_id, Action::RotateLeft);
 }
 
 // When /drop url is requested, drop tetris figure
 #[post("/drop")]
-fn drop(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) {
-    let user_id = tetris_user_id(cookie_jar, tetrises);
-    tetrises.access_refresh_mut(&user_id, |opt_tetris| {
-        opt_tetris.map(|tetris| tetris.add_action(Action::Drop));
-    });
+fn drop(cookie_jar: &CookieJar, matches: &State<TetrisMatches>) {
+    let user_id = user_id(cookie_jar, matches);
+    matches.add_action(user_id, Action::Drop);
 }
 
 #[post("/bottom_refill")]
-fn bottom_refill(cookie_jar: &CookieJar, tetrises: &State<Tetrises>) {
-    let user_id = tetris_user_id(cookie_jar, tetrises);
-    tetrises.access_refresh_mut(&user_id, |opt_tetris| {
-        opt_tetris.map(|tetris| tetris.add_action(Action::BottomRefill));
-    });
+fn bottom_refill(cookie_jar: &CookieJar, matches: &State<TetrisMatches>) {
+    let user_id = user_id(cookie_jar, matches);
+    matches.add_action(user_id, Action::BottomRefill);
 }
 
 // .ok_or(status::NotFound("User not found".to_string()));
@@ -235,15 +238,15 @@ async fn init() -> Result<Rocket<Ignite>, Error> {
     let config = persy::Config::default();
     Persy::open_or_create_with(db_name, config, |_persy| Ok(()))?;
 
-    // Create storage for tetris games
-    let tetrises = Tetrises::new(1000);
+    // Create matches storage
+    let matches = TetrisMatches::new();
 
     // Start rocket server
     let rocket = rocket::build()
         // Attach Template::fairing() to rocket instance
         .attach(Template::fairing())
-        // Game statuses for users
-        .manage(tetrises)
+        // Matches
+        .manage(matches)
         // Mount index route
         .mount("/", routes![index, admin, files, game_state])
         .mount(
