@@ -1,6 +1,7 @@
 mod error;
 mod event_regulator;
 mod lru_storage;
+mod match_finder;
 mod tetris;
 mod tetris_pair;
 
