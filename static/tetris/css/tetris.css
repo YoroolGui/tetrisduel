@@ -52,3 +52,26 @@ canvas {
     font-size: 4vh;
     /* use viewport units */
 }
+
+/* 'canvas_player' and 'canvas_opponent' side by side when page is landscape, one above another when page is portrait */
+@media screen and (orientation: landscape) {
+    #canvas_player {
+        float: left;
+        width: 50%;
+    }
+
+    #canvas_opponent {
+        float: right;
+        width: 50%;
+    }
+}
+
+@media screen and (orientation: portrait) {
+    #canvas_player {
+        width: 100%;
+    }
+
+    #canvas_opponent {
+        width: 100%;
+    }
+}

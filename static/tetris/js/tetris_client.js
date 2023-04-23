@@ -36,7 +36,7 @@ class TetrisDisplay {
     }
 
     drawExplosion(x, y, h, w) {
-        var ctx = self.ctx;
+        var ctx = this.ctx;
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(x, y, w, h);
         // Draw explosion
@@ -83,6 +83,7 @@ class TetrisDisplay {
     }
 
     draw() {
+        var ctx = this.ctx;
         const rows = this.rows;
         const cols = this.cols;
         const cellSize = Math.floor(ctx.canvas.height / (rows + 1));
@@ -118,12 +119,14 @@ class TetrisClient {
 
     url;
     sse;
-    display;
+    display_player;
+    display_opponent;
 
     // Contructor accepts canvas
-    constructor(canvas, url) {
+    constructor(canvas_player, canvas_opponemt, url) {
         this.url = url;
-        this.display = new TetrisDisplay(canvas, 20, 10);
+        this.display_player = new TetrisDisplay(canvas_player, 20, 10);
+        this.display_opponent = new TetrisDisplay(canvas_opponemt, 20, 10);
     }
 
     connect() {
@@ -131,7 +134,8 @@ class TetrisClient {
         this.sse = new EventSource(this.url + '/sse');
         this.sse.addEventListener('message', (event) => {
             var data = JSON.parse(event.data);
-            this.display.update(data.player);
+            this.display_player.update(data.player);
+            this.display_opponent.update(data.opponent);
         });
     }
 

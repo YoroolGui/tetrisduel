@@ -19,8 +19,8 @@
         </div>
     </div>
 
-
-    <canvas id="myCanvas"></canvas>
+    <canvas id="canvas_player"></canvas>
+    <canvas id="canvas_opponent"></canvas>
 
     <script>
         if (/Mobi/i.test(navigator.userAgent)) {
@@ -30,25 +30,22 @@
             // if this is not a mobile device, do nothing
         }
 
-        var canvas = document.getElementById("myCanvas");
-        var ctx = canvas.getContext("2d");
-        var tetrisClient = new TetrisClient(canvas, "");
+        var canvas_player = document.getElementById("canvas_player");
+        var canvas_opponent = document.getElementById("canvas_opponent");
+        var tetrisClient = new TetrisClient(canvas_player, canvas_opponent, "");
         tetrisClient.bindKeys();
         tetrisClient.bindButtons("left-btn", "rotate-left-btn", "down-btn", "rotate-right-btn", "right-btn");
 
-        function setCanvasSize(width, height) {
-            canvas.width = width;
-            canvas.height = height;
-            // tetrisClient.redraw();
+        function resizeCanvas(canvas) {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
         }
-
-        function resizeCanvas() {
-            setCanvasSize(window.innerWidth, window.innerHeight);
-        }
-        resizeCanvas();
+        resizeCanvas(canvas_player);
+        resizeCanvas(canvas_opponent);
 
         window.addEventListener('resize', function () {
-            resizeCanvas();
+            resizeCanvas(canvas_player);
+            resizeCanvas(canvas_opponent);
         });
 
         tetrisClient.connect();
