@@ -6,8 +6,8 @@ use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct TetrisPairState {
-    pub tetris_a: TetrisGameState,
-    pub tetris_b: TetrisGameState,
+    pub player: TetrisGameState,
+    pub opponent: TetrisGameState,
 }
 
 #[derive(Default)]
@@ -55,13 +55,6 @@ impl TetrisPair {
         self.step_divergence
     }
 
-    pub fn get_player_game_state(&self, player: PlayerSide) -> TetrisGameState {
-        match player {
-            PlayerSide::A => self.tetris_a.get_game_state(),
-            PlayerSide::B => self.tetris_b.get_game_state(),
-        }
-    }
-
     pub fn add_player_action(&mut self, player: PlayerSide, action: Action) {
         match player {
             PlayerSide::A => self.tetris_a.add_action(action),
@@ -73,10 +66,16 @@ impl TetrisPair {
         self.tetris_a.is_game_over() || self.tetris_b.is_game_over()
     }
 
-    pub fn get_game_state(&self) -> TetrisPairState {
-        TetrisPairState {
-            tetris_a: self.tetris_a.get_game_state(),
-            tetris_b: self.tetris_b.get_game_state(),
+    pub fn get_player_game_state(&self, player: PlayerSide) -> TetrisPairState {
+        match player {
+            PlayerSide::A => TetrisPairState {
+                player: self.tetris_a.get_game_state(),
+                opponent: self.tetris_b.get_game_state(),
+            },
+            PlayerSide::B => TetrisPairState {
+                player: self.tetris_b.get_game_state(),
+                opponent: self.tetris_a.get_game_state(),
+            },
         }
     }
 }

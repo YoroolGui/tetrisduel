@@ -10,6 +10,7 @@ pub struct Match<K: Eq, V> {
     pub field: V,
 }
 
+#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
 pub enum PlayerSide {
     A,
     B,

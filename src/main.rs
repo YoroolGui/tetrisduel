@@ -45,7 +45,10 @@ impl TetrisMatches {
         let matches = self.0.read().unwrap();
         matches
             .get_match_for_player(&user_id)
-            .and_then(|(_, tetris_match)| Some(tetris_match.field.get_game_state()))
+            .and_then(|(_, tetris_match)| {
+                let player_side = tetris_match.get_player_side(&user_id)?;
+                Some(tetris_match.field.get_player_game_state(player_side))
+            })
     }
     fn add_action(&self, user_id: u32, action: Action) {
         let mut matches = self.0.write().unwrap();
@@ -62,7 +65,7 @@ impl TetrisMatches {
                 if let Some(player_side) = tetris_match.get_player_side(&user_id) {
                     let divergence = tetris_match.field.step_player(player_side);
                     if divergence < 100 {
-                        return Some(tetris_match.field.get_game_state());
+                        return Some(tetris_match.field.get_player_game_state(player_side));
                     } else {
                         matches.remove_match(match_id);
                     }
