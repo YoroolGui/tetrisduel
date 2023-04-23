@@ -63,7 +63,7 @@ impl<K: PartialEq + Eq + Hash> WaitList<K> for HashSet<K> {
     }
 }
 
-type MatchId = usize;
+pub type MatchId = usize;
 
 pub struct Matches<K, V, WL = HashSet<K>>
 where

@@ -7,9 +7,9 @@ mod tetris_pair;
 use std::sync::{Arc, RwLock};
 
 use error::Error;
-use matches::{Matches, PlayerStatus};
+use matches::{MatchId, Matches, PlayerStatus};
 use persy::Persy;
-use rocket::post;
+use rocket::tokio::select;
 use rocket::tokio::time::{self, Duration};
 use rocket::{
     get,
@@ -22,6 +22,7 @@ use rocket::{
     serde::json::serde_json,
     Ignite, Rocket, State,
 };
+use rocket::{post, Shutdown};
 use rocket_dyn_templates::Template;
 use tetris::Action;
 use tetris_pair::{TetrisPair, TetrisPairState};
@@ -54,9 +55,21 @@ impl TetrisMatches {
             }
         }
     }
-    fn find_match(&self, user_id: u32) -> bool {
+    fn step(&self, user_id: u32) -> Option<TetrisPairState> {
         let mut matches = self.0.write().unwrap();
-        matches.find_match(&user_id)
+        if matches.find_match(&user_id) {
+            if let Some((match_id, tetris_match)) = matches.get_mut_match_for_player(&user_id) {
+                if let Some(player_side) = tetris_match.get_player_side(&user_id) {
+                    let divergence = tetris_match.field.step_player(player_side);
+                    if divergence < 100 {
+                        return Some(tetris_match.field.get_game_state());
+                    } else {
+                        matches.remove_match(match_id);
+                    }
+                }
+            }
+        }
+        None
     }
 }
 
@@ -158,14 +171,12 @@ fn sse<'a, 'b>(
     EventStream! {
         let mut interval = time::interval(Duration::from_millis(10));
         loop {
-            if matches.find_match(user_id) {
-                if let Some(game_state) = matches.game_state(user_id) {
-                    // Send game state as json
-                    yield Event::data(serde_json::to_string(&game_state).unwrap());
-                    // Wait for next game tick
-                    interval.tick().await;
-                }
+            if let Some(game_state) = matches.step(user_id) {
+                // Send game state as json
+                yield Event::data(serde_json::to_string(&game_state).unwrap());
+                interval.tick().await;
             } else {
+                yield Event::data("foo".to_string());
                 time::sleep(Duration::from_millis(1000)).await;
                 interval = time::interval(Duration::from_millis(10));
             }

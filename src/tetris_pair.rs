@@ -18,6 +18,7 @@ pub struct TetrisPair {
     // This is to prevent one player from getting an advantage by calling step more often
     step_a: bool,
     step_b: bool,
+    step_divergence: usize,
 }
 
 impl TetrisPair {
@@ -27,15 +28,17 @@ impl TetrisPair {
             tetris_b: Tetris::new(width, height),
             step_a: false,
             step_b: false,
+            step_divergence: 0,
         }
     }
 
-    pub fn step_player(&mut self, player: PlayerSide) {
+    pub fn step_player(&mut self, player: PlayerSide) -> usize {
         match player {
             PlayerSide::A => self.step_a = true,
             PlayerSide::B => self.step_b = true,
         }
         if self.step_a && self.step_b {
+            self.step_divergence = 0;
             self.step_a = false;
             self.step_b = false;
             let step_result_a = self.tetris_a.step();
@@ -46,7 +49,10 @@ impl TetrisPair {
             if step_result_b == StepResult::LineRemoved {
                 self.tetris_a.add_action(Action::BottomRefill);
             }
+        } else {
+            self.step_divergence += 1;
         }
+        self.step_divergence
     }
 
     pub fn get_player_game_state(&self, player: PlayerSide) -> TetrisGameState {

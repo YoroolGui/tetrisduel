@@ -3,7 +3,7 @@ use rocket::serde::Serialize;
 use std::collections::VecDeque;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum CellType {
+pub enum CellType {
     Empty = 0,
     Blasted,
     I,
@@ -41,7 +41,7 @@ impl CellType {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
-enum Rotation {
+pub enum Rotation {
     R0,
     R90,
     R180,
@@ -221,7 +221,7 @@ fn get_tetromino_matrix(tetromino_type: &TetrominoType) -> &TetrominoMatrix {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
-enum TetrominoType {
+pub enum TetrominoType {
     I,
     J,
     L,
@@ -284,7 +284,7 @@ impl TetrominoType {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
-struct Tetromino {
+pub struct Tetromino {
     // Tetromino type
     tetromino_type: TetrominoType,
     // Tetromino rotation
