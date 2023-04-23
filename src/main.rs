@@ -22,7 +22,7 @@ use rocket::{
     serde::json::serde_json,
     Ignite, Rocket, State,
 };
-use rocket::{post, Shutdown};
+use rocket::{post, Config, Shutdown};
 use rocket_dyn_templates::Template;
 use tetris::Action;
 use tetris_pair::{TetrisPair, TetrisPairState};
@@ -257,6 +257,8 @@ async fn init() -> Result<Rocket<Ignite>, Error> {
 
     // Start rocket server
     let rocket = rocket::build()
+        // Read config from Rocket.toml
+        .manage(Config::figment())
         // Attach Template::fairing() to rocket instance
         .attach(Template::fairing())
         // Matches
