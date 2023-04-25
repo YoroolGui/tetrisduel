@@ -15,7 +15,7 @@ jobs:
           profile: minimal
           toolchain: stable
       - name: Build project
-      - uses: actions/cache@v3
+        uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/bin/
