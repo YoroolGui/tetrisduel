@@ -1,21 +1,24 @@
-name: Deploy
+name: Build
 
 on:
   workflow_dispatch:
 
 jobs:
-  upload:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - name: Build project
+        run: |
+          cargo build --release
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v2
         with:
           name: gameserver-release-binary
-      - name: Upload binary via SSH
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ vars.DEPLOY_HOST }}
-          username: ${{ vars.DEPLOY_USERNAME }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          source: gameserver
-          target: ${{ vars.DEPLOY_PATH }}
+          path: target/release/gameserver
